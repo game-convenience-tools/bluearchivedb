@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCHALE Student Tactical Database</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@500;700&family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --ba-blue: #00B2FF;
+            --ba-blue-glow: rgba(0, 178, 255, 0.3);
+            --ba-pink: #FF6FA2;
+            --ba-bg: #E3F2FD;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-main: #2C3E50;
+            --text-sub: #6C7A89;
+            
+            /* 属性カラー */
+            --color-explosive: #ED1C24; 
+            --color-piercing: #FFC107;  
+            --color-mystic: #007BFF;    
+            --color-sonic: #9B5DE5;     
+            --color-break: #10B981;     
+
+            /* スキル種別カラー */
+            --ex-color: #FF6FA2;
+            --ns-color: #10B981;
+            --ps-color: #F59E0B;
+            --ss-color: #8B5CF6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--ba-bg);
+            color: var(--text-main);
+            font-family: 'Space Grotesk', 'Noto Sans JP', sans-serif;
+            padding: 30px 20px;
+            min-height: 100vh;
+            background-image: 
+                linear-gradient(rgba(0, 178, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 178, 255, 0.04) 1px, transparent 1px),
+                radial-gradient(at 0% 0%, rgba(255, 240, 245, 0.5) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 178, 255, 0.15) 0px, transparent 50%);
+            background-size: 30px 30px, 30px 30px, 100% 100%, 100% 100%;
+            background-attachment: fixed;
+        }
+
+        /* ページ送りが画面下に固定されるため、メインフレームの下部に余白を設けてカードが隠れるのを防ぎます */
+        .container { 
+            max-width: 2006px; 
+            margin: 0 auto; 
+            padding-bottom: 80px; 
+        }
+
+        .system-frame {
+            border: 2px solid rgba(0, 178, 255, 0.4);
+            border-radius: 16px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 0 30px rgba(0, 178, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .system-frame::before {
+            content: ''; position: absolute; top: -2px; left: -2px; width: 30px; height: 30px;
+            border-top: 5px solid var(--ba-blue); border-left: 5px solid var(--ba-blue); border-radius: 14px 0 0 0;
+        }
+        .system-frame::after {
+            content: ''; position: absolute; bottom: -2px; right: -2px; width: 30px; height: 30px;
+            border-bottom: 5px solid var(--ba-pink); border-right: 5px solid var(--ba-pink); border-radius: 0 0 14px 0;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 178, 255, 0.2);
+        }
+
+        .title-group h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            color: #1A2E40;
+            letter-spacing: 1px;
+        }
+        .title-group h1 span { color: var(--ba-blue); }
+        .title-group p { font-size: 11px; color: var(--text-sub); letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
+
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .search-wrapper {
+            position: relative; width: 100%; max-width: 420px;
+        }
+        .search-wrapper i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--ba-blue); }
+        .search-wrapper input {
+            width: 100%; padding: 12px 20px 12px 48px; border: 1px solid rgba(0, 178, 255, 0.2);
+            border-radius: 30px; background: rgba(255, 255, 255, 0.9); outline: none;
+            font-size: 13px; font-weight: 500; color: #1A2E40;
+            box-shadow: 0 4px 15px rgba(0, 178, 255, 0.05);
+        }
+
+        .search-limit-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 178, 255, 0.2);
+            border-radius: 30px;
+            padding: 2px 14px 2px 14px;
+            box-shadow: 0 4px 15px rgba(0, 178, 255, 0.05);
+            height: 38px;
+        }
+        .search-limit-wrapper i {
+            color: var(--ba-blue);
+            font-size: 12px;
+            margin-right: 6px;
+        }
+        .search-limit-select {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+            cursor: pointer;
+            font-family: 'Noto Sans JP', sans-serif;
+            padding-right: 4px;
+        }
+
+        .ba-btn {
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            white-space: nowrap;
+            height: 38px;
+        }
+        
+        .btn-toggle-filter {
+            background: rgba(0, 178, 255, 0.1);
+            color: var(--ba-blue);
+            border-color: rgba(0, 178, 255, 0.2);
+        }
+        .btn-toggle-filter:hover {
+            background: rgba(0, 178, 255, 0.2);
+        }
+        .btn-toggle-filter.active {
+            background: var(--ba-blue) !important;
+            color: #fff !important;
+            border-color: var(--ba-blue) !important;
+            box-shadow: 0 0 12px rgba(0, 178, 255, 0.4);
+        }
+        
+        .btn-clear-filter {
+            background: rgba(255, 111, 162, 0.1);
+            color: var(--ba-pink);
+            border-color: rgba(255, 111, 162, 0.2);
+        }
+        .btn-clear-filter:hover {
+            background: var(--ba-pink);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(255, 111, 162, 0.4);
+        }
+        
+        .type-badge-style {
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.6) !important;
+            border: 1px solid transparent !important;
+            font-weight: 700 !important;
+            display: inline-block;
+        }
+
+        .attr-explosive { color: var(--color-explosive) !important; border-color: rgba(237, 28, 36, 0.2) !important; background-color: rgba(237, 28, 36, 0.05) !important; }
+        .attr-piercing { color: var(--color-piercing) !important; border-color: rgba(255, 193, 7, 0.3) !important; background-color: rgba(255, 193, 7, 0.05) !important; }
+        .attr-mystic { color: var(--color-mystic) !important; border-color: rgba(0, 123, 255, 0.2) !important; background-color: rgba(0, 123, 255, 0.05) !important; }
+        .attr-sonic { color: var(--color-sonic) !important; border-color: rgba(155, 93, 229, 0.2) !important; background-color: rgba(155, 93, 229, 0.05) !important; }
+        .attr-break { color: var(--color-break) !important; border-color: rgba(16, 185, 129, 0.2) !important; background-color: rgba(16, 185, 129, 0.05) !important; }
+        
+        mark.search-highlight {
+            background: #fff2a3;
+            color: #d32f2f;
+            font-weight: 700;
+            padding: 0 2px;
+            border-radius: 2px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        /* フィルターパネル */
+        .filter-grid {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 178, 255, 0.15);
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+        }
+
+        .filter-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-sub);
+            font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+            text-transform: uppercase;
+        }
+
+        .custom-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .dropdown-button {
+            width: 100%;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid rgba(0, 178, 255, 0.2);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: left;
+            color: #1A2E40;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        .dropdown-button::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 11px;
+            color: var(--ba-blue);
+            transition: transform 0.2s;
+        }
+
+        .custom-dropdown.open .dropdown-button::after {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid rgba(0, 178, 255, 0.2);
+            border-radius: 6px;
+            margin-top: 4px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 999;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            padding: 6px;
+        }
+
+        .custom-dropdown.open .dropdown-content { display: block; }
+
+        .dropdown-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1A2E40;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+
+        .dropdown-option:hover { background: #EDF8FF; }
+        .dropdown-option input[type="checkbox"] { cursor: pointer; accent-color: var(--ba-blue); }
+
+        /* 生徒カードコンテナ */
+        .student-container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 14px; 
+            position: relative;
+            z-index: 1;
+        }
+
+        .student-row {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02);
+            display: grid;
+            grid-template-columns: 140px 240px 1fr 140px;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .name-section { display: flex; flex-direction: column; justify-content: center; }
+        .student-name { font-size: 18px; font-weight: 700; color: #1A2E40; letter-spacing: -0.5px; line-height: 1.2; }
+        
+        .student-school { font-size: 11px; color: var(--ba-blue); font-weight: 700; margin-top: 5px; }
+        .clickable-filter-text { cursor: pointer; transition: color 0.15s; }
+        .clickable-filter-text:hover { color: var(--ba-pink) !important; text-decoration: underline; }
+
+        .stats-section {
+            display: grid;
+            border-right: 1px solid rgba(0,0,0,0.06);
+            padding-right: 15px;
+        }
+
+        .stat-badge {
+            background: rgba(0,0,0,0.03);
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            white-space: nowrap;
+            min-height: 26px;
+            line-height: 1.2;
+        }
+        .stat-badge > span.clickable-val { font-weight: 700; color: #1A2E40; cursor: pointer; }
+        .stat-badge > span.clickable-val:hover { color: var(--ba-pink); text-decoration: underline; }
+        .stat-badge .type-badge-style { font-size: 10px; padding: 1px 5px; line-height: 1.2; margin-left: auto; cursor: pointer; }
+        .stat-badge .type-badge-style:hover { opacity: 0.8; box-shadow: 0 0 4px rgba(0,0,0,0.2); }
+
+        .skills-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+
+        .skill-block {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 178, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            height: 100%;
+        }
+        
+        .skill-header { display: flex; justify-content: space-between; align-items: center; }
+        .skill-type {
+            font-size: 9px; font-family: 'Orbitron', sans-serif; font-weight: 700; color: #fff;
+            padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;
+        }
+        .type-ex { background: var(--ex-color); }
+        .type-ns { background: var(--ns-color); }
+        .type-ps { background: var(--ps-color); }
+        .type-ss { background: var(--ss-color); }
+
+        .skill-title { font-size: 12px; font-weight: 700; color: #1A2E40; line-height: 1.2; }
+        .skill-cost { font-size: 11px; font-family: 'Orbitron', sans-serif; font-weight: 700; color: #1A2E40; background: #FFE5EE; padding: 1px 5px; border-radius: 3px; cursor: pointer; }
+        .skill-cost:hover { background: var(--ba-pink); color: #fff; }
+        .skill-desc { font-size: 11px; color: var(--text-sub); line-height: 1.4; font-weight: 400; word-break: break-all; }
+
+        .skill-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; padding-top: 4px; }
+        .tag-pill {
+            background: #E6F6FF; color: #0088CC; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 700; border: 1px solid rgba(0, 136, 204, 0.1);
+            cursor: pointer;
+        }
+        .tag-pill:hover { opacity: 0.8; text-decoration: underline; }
+        .type-ex-tag { background: #FFF0F5; color: #FF4081; border-color: rgba(255, 64, 129, 0.1); }
+        .type-ns-tag { background: #E8F8F5; color: #0E9A6C; border-color: rgba(14, 154, 108, 0.1); }
+        .type-ps-tag { background: #FEF9E7; color: #D4AC0D; border-color: rgba(212, 172, 13, 0.1); }
+        .type-ss-tag { background: #F5EEF8; color: #7D3C98; border-color: rgba(125, 60, 152, 0.1); }
+
+        .items-section {
+            display: flex; flex-direction: column; gap: 8px; font-size: 11px;
+            padding-left: 20px; border-left: 1px solid rgba(0,0,0,0.06);
+            justify-content: center;
+        }
+        .item-row { display: flex; flex-direction: column; }
+        .item-label { color: var(--text-sub); font-size: 9px; text-transform: uppercase; font-family: 'Orbitron', sans-serif; font-weight: 700; }
+        .item-value { color: #1A2E40; font-weight: 700; margin-top: 2px; }
+
+        .clickable-gear { cursor: pointer; }
+        .clickable-gear:hover { color: var(--ba-pink); text-decoration: underline; }
+
+        .status-message { text-align: center; padding: 20px; font-weight: 700; color: var(--text-sub); }
+
+        /* 【変更】ページ送りUIを画面最下部に「常に固定表示」するスタイル */
+        .pagination-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(227, 242, 253, 0.9); /* システム背景色と調和する半透明 */
+            backdrop-filter: blur(10px);
+            border-top: 2px solid rgba(0, 178, 255, 0.3);
+            box-shadow: 0 -5px 25px rgba(0, 178, 255, 0.15);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+            flex-wrap: wrap;
+            z-index: 9999; /* 確実に最前面に表示 */
+        }
+        
+        .pagination-btn {
+            min-width: 36px;
+            height: 36px;
+            padding: 0 10px;
+            border: 1px solid rgba(0, 178, 255, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .pagination-btn:hover:not(.disabled) {
+            background: rgba(0, 178, 255, 0.1);
+            color: var(--ba-blue);
+            border-color: var(--ba-blue);
+        }
+        .pagination-btn.active {
+            background: var(--ba-blue);
+            color: #fff;
+            border-color: var(--ba-blue);
+            box-shadow: 0 0 10px rgba(0, 178, 255, 0.3);
+        }
+        .pagination-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .pagination-info {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-sub);
+            margin: 0 10px;
+            font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+        }
+
+        footer {
+            margin-top: 25px; text-align: center; font-size: 10px; color: var(--text-sub);
+            font-family: 'Orbitron', sans-serif; letter-spacing: 1px;
+        }
+
+        @media (max-width: 1250px) {
+            .student-row { grid-template-columns: 1fr; gap: 15px; }
+            .stats-section { border-right: none; padding-right: 0; grid-template-columns: repeat(4, 1fr) !important; }
+            .items-section { border-left: none; padding-left: 0; grid-template-columns: repeat(2, 1fr); display: grid; }
+        }
+        @media (max-width: 650px) {
+            .stats-section { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+/* ============================================================================
+   プラナモード（Theme: Plana）の完全確定デザイン定義
+   ============================================================================ */
+[data-theme="plana"] {
+    /* プラナ専用カラーパレット */
+    --ba-blue: #A3A1F7 !important;            /* プラナの淡いバイオレットパープル */
+    --ba-blue-glow: rgba(163, 161, 247, 0.4) !important;
+    --ba-pink: #FF5A79 !important;            /* プラナのローズピンク */
+    --ba-bg: #121216 !important;              /* 深みのある漆黒の背景 */
+    --card-bg: rgba(26, 26, 36, 0.95) !important; /* カード全体のダーク背景 */
+    --text-main: #F1F5F9 !important;          /* メインテキスト */
+    --text-sub: #94A3B8 !important;           /* サブテキスト */
+
+    /* スキルタイプごとの基本色もプラナ向けに少しダーク/サイバーに変更 */
+    --ex-color: #FF5A79 !important;           /* ローズピンク */
+    --ns-color: #2E8B57 !important;
+    --ps-color: #D97706 !important;
+    --ss-color: #6D28D9 !important;
+
+    /* 全体のダークモード化 */
+    body {
+        background-color: var(--ba-bg) !important;
+        background: var(--ba-bg) !important;
+        color: var(--text-main) !important;
+    }
+    .container {
+        background: rgba(18, 18, 22, 0.7) !important;
+        background-color: rgba(18, 18, 22, 0.7) !important;
+    }
+/* ============================================================================
+   【確定】プラナモード検索・フィルターエリア統合ダーク化定義
+   ============================================================================ */
+
+/* 1. 【上半分】外枠フレーム自体にかかっているアロナモードの白い背景（!important）を完璧に上書き */
+[data-theme="plana"] .system-frame {
+    background: #222230 !important;            /* スキルエリアと100%同じ背景色 */
+    background-color: #222230 !important;
+    border: 1px solid rgba(163, 161, 247, 0.25) !important; /* スキルエリアと同じ枠線 */
+}
+
+/* プラナモード（Theme: Plana）詳細検索エリア専用の設定 */
+
+/* 詳細検索エリア（フィルターグリッド）の背景色と枠線をスキルエリアに合わせる */
+[data-theme="plana"] .filter-grid {
+    background: #222230 !important;            /* スキルエリアと100%同じ背景色 */
+    background-color: #222230 !important;
+    border: 1px solid rgba(163, 161, 247, 0.25) !important; /* スキルエリアと同じ淡いバイオレットの細い枠線 */
+}
+
+/* フィルターエリア内の各ドロップダウンボタンの白浮きも同時に抑える指定 */
+[data-theme="plana"] .filter-grid .dropdown-button {
+    background-color: #1A1A24 !important;    /* 生徒カードと同じ深いダークグレー */
+    background: #1A1A24 !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+
+/* ドロップダウンを開いた時の中身（チェックボックスの並ぶ背景）も合わせる場合 */
+[data-theme="plana"] .filter-grid .dropdown-content {
+    background-color: #1A1A24 !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+
+/* フィルターの各ラベル（学園、攻撃タイプなど）の文字色調整 */
+[data-theme="plana"] .filter-grid .filter-group label {
+    color: #A3A1F7 !important;                /* プラナカラーの淡いバイオレット */
+}
+
+/* ドロップダウン内の選択肢の文字色調整 */
+[data-theme="plana"] .filter-grid .dropdown-option {
+    color: #F1F5F9 !important;
+}
+
+/* 3. 検索エリア内の文字入力欄（input）やドロップダウンの白浮きを、カードと同じ深みのある色で解消 */
+/* ※カード内のテキストを巻き込まないよう、検索エリア内の要素に完全に限定しています */
+[data-theme="plana"] .system-frame input[type="text"],
+[data-theme="plana"] .system-frame select,
+[data-theme="plana"] .system-frame .dropdown-button {
+    background-color: #1A1A24 !important;    /* 生徒カードの背景と同じ、より深いダークグレー */
+    background: #1A1A24 !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+
+/* 4. フィルター内のチェックボックス（input）やラベルなどの文字色が紺色等で潰れるのを防止 */
+[data-theme="plana"] .filter-group label {
+    color: var(--ba-blue) !important;          /* プラナの淡いバイオレット */
+}
+[data-theme="plana"] .dropdown-option {
+    color: #F1F5F9 !important;
+}
+
+/* プラナモード（Theme: Plana）表示件数セレクトボックス専用スタイル */
+[data-theme="plana"] .search-limit-select {
+    background: #1A1A24 !important;          /* 生徒カードと同じ、深いダークグレーに変更 */
+    background-color: #1A1A24 !important;
+    color: #FFFFFF !important;               /* 文字を白くしてクッキリ見えるように変更 */
+    border: 1px solid rgba(163, 161, 247, 0.3) !important; /* 枠線をプラナの淡いバイオレットに変更 */
+}
+    /* 3. ドロップダウンボタンや件数指定(select)の白浮きも抑えるセレクター */
+    [data-theme="plana"] #liveSearch,
+    [data-theme="plana"] #displayLimitSelect,
+    [data-theme="plana"] .dropdown-button {
+        background-color: #1A1A24 !important;    /* カードの背景と同じ、より深いダークグレー */
+        color: #FFFFFF !important;
+        border: 1px solid rgba(163, 161, 247, 0.3) !important;
+    }
+
+    .system-frame::before { border-top-color: var(--ba-blue) !important; border-left-color: var(--ba-blue) !important; }
+    .system-frame::after { border-bottom-color: var(--ba-pink) !important; border-right-color: var(--ba-pink) !important; }
+
+    header { border-bottom-color: rgba(163, 161, 247, 0.2) !important; }
+    .title-group h1 { color: #FFFFFF !important; }
+
+    /* 入力フォーム・ドロップダウンのダーク化 */
+    input[type="text"], select, .dropdown-button, .dropdown-content {
+        background: #1E1E26 !important;
+        color: var(--text-main) !important;
+        border-color: rgba(163, 161, 247, 0.4) !important;
+    }
+    .dropdown-option { color: var(--text-main) !important; }
+    .dropdown-option:hover { background: rgba(163, 161, 247, 0.2) !important; }
+
+    /* 生徒カード本体のプラナ化 */
+    .student-card {
+        background: var(--card-bg) !important;
+        background-color: var(--card-bg) !important;
+        border: 1px solid rgba(163, 161, 247, 0.2) !important;
+        box-shadow: 0 0 20px rgba(163, 161, 247, 0.08) !important;
+        color: var(--text-main) !important;
+    }
+    .student-card h3 {
+        color: var(--ba-blue) !important;
+        text-shadow: 0 0 5px rgba(163, 161, 247, 0.4) !important;
+    }
+    .student-meta, .student-stats { color: var(--text-sub) !important; }
+    .stat-badge span { color: var(--text-main) !important; }
+
+    /* ------------------------------------------------------------------------
+       【スキルエリア】白い背景を完全にダークグレーに変更（文字の視認性を確保）
+       ------------------------------------------------------------------------ */
+    .skill-block {
+        background: #222232 !important;            /* 白(rgba(255,255,255,0.7))からダークへ */
+        border: 1px solid rgba(163, 161, 247, 0.2) !important;
+        border-radius: 4px !important;            /* やや直線的な角に */
+        color: var(--text-main) !important;
+    }
+
+    /* ------------------------------------------------------------------------
+       【スキルタイトル】アロナモードとの差別化（シャープなローズピンクの左線へ）
+       ------------------------------------------------------------------------ */
+    .skill-title {
+        color: var(--ba-blue) !important;          /* スキル名をプラナバイオレットに */
+        font-weight: 700 !important;
+        border-left: 4px double var(--ba-pink) !important; /* アロナの青太線から、プラナのピンク二重線へ */
+        padding-left: 8px !important;
+        margin: 4px 0 !important;
+    }
+    .skill-desc {
+        color: #E2E8F0 !important;                 /* 説明文の文字を明るくして視認性確保 */
+    }
+
+    /* ------------------------------------------------------------------------
+       【スキルタグ】丸みを完全排除し、バイオレットの直線的サイバーデザインへ
+       ------------------------------------------------------------------------ */
+    .skill-tag {
+        background: rgba(163, 161, 247, 0.15) !important;
+        color: var(--ba-blue) !important;
+        border: 1px solid rgba(163, 161, 247, 0.4) !important;
+        border-radius: 0px !important;             /* 丸み(border-radius: 12px)を完全に殺して角を尖らせる */
+        padding: 2px 8px !important;
+        font-size: 11px !important;
+        font-weight: bold !important;
+        box-shadow: 0 0 4px rgba(163, 161, 247, 0.2) !important;
+    }
+
+    /* コストバッジ */
+    .skill-cost {
+        background: rgba(255, 90, 121, 0.15) !important;
+        color: var(--ba-pink) !important;
+        border: 1px solid rgba(255, 90, 121, 0.4) !important;
+        border-radius: 0px !important;
+    }
+
+    /* その他UI（クリアボタン・ページ送り） */
+    .clear-btn {
+        background: rgba(255, 90, 121, 0.12) !important;
+        color: var(--ba-pink) !important;
+        border-color: var(--ba-pink) !important;
+    }
+    .clear-btn:hover {
+        background: var(--ba-pink) !important;
+        color: var(--ba-bg) !important;
+    }
+    #paginationContainer button {
+        background: #1E1E26 !important;
+        color: var(--ba-blue) !important;
+        border-color: rgba(163, 161, 247, 0.4) !important;
+    }
+    #paginationContainer button.active {
+        background: var(--ba-blue) !important;
+        color: #121216 !important;
+    }
+    
+    /* ============================================================================
+       プラナモード（Theme: Plana）生徒名・愛用品・贈り物の視認性向上定義
+       ============================================================================ */
+    
+    /* 1. 生徒名の文字色を深い紺からクッキリとした白へ変更 */
+    .student-name,
+    .student-row .name-section .student-name {
+        color: #FFFFFF !important;
+    }
+
+    /* 2. 愛用品・贈り物の共通見出しラベルをプラナの淡いバイオレットに変更 */
+    .item-row .item-label {
+        color: #A3A1F7 !important;
+    }
+
+    /* 3. 愛用品名・贈り物の共通テキスト、および愛用品リンクを明るいグレーに変更 */
+    .item-row .item-value,
+    .item-row .clickable-gear {
+        color: #F1F5F9 !important;
+    }
+}
+
+/* スイッチボタンの構造を維持 */
+.mode-switcher-container { margin: 8px 0; }
+.cyber-btn-sm {
+    background: transparent; border: 1px solid var(--ba-blue); color: var(--ba-blue);
+    padding: 5px 14px; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: bold; cursor: pointer;
+    text-shadow: 0 0 5px var(--ba-blue-glow); box-shadow: 0 0 10px var(--ba-blue-glow); transition: all 0.3s ease;
+    clip-path: polygon(0 0, 92% 0, 100% 30%, 100% 100%, 8% 100%, 0 70%);
+}
+.cyber-btn-sm:hover { background: var(--ba-blue); color: #121216; box-shadow: 0 0 15px var(--ba-blue); }
+
+/* ============================================================================
+   モード切り替えボタンの専用スタイリング（ヘッダー用）
+   ============================================================================ */
+.mode-switcher-container {
+    margin: 8px 0;
+}
+.cyber-btn-sm {
+    background: transparent;
+    border: 1px solid var(--ba-blue);
+    color: var(--ba-blue);
+    padding: 5px 14px;
+    font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-shadow: 0 0 5px var(--ba-blue-glow);
+    box-shadow: 0 0 10px var(--ba-blue-glow);
+    transition: all 0.3s ease;
+    clip-path: polygon(0 0, 92% 0, 100% 30%, 100% 100%, 8% 100%, 0 70%);
+}
+.cyber-btn-sm:hover {
+    background: var(--ba-blue);
+    color: #121216;
+    box-shadow: 0 0 15px var(--ba-blue);
+}
+
+/* ============================================================================
+   モード切り替えボタンの専用スタイリング（ヘッダー用）
+   ============================================================================ */
+.mode-switcher-container {
+    margin: 8px 0;
+}
+.cyber-btn-sm {
+    background: transparent;
+    border: 1px solid var(--ba-blue);
+    color: var(--ba-blue);
+    padding: 5px 14px;
+    font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-shadow: 0 0 5px var(--ba-blue-glow);
+    box-shadow: 0 0 10px var(--ba-blue-glow);
+    transition: all 0.3s ease;
+    clip-path: polygon(0 0, 92% 0, 100% 30%, 100% 100%, 8% 100%, 0 70%);
+}
+.cyber-btn-sm:hover {
+    background: var(--ba-blue);
+    color: #121216;
+    box-shadow: 0 0 15px var(--ba-blue);
+}
+
+/* モード切り替えボタンの専用スタイリング（既存デザインと融和） */
+.mode-switcher-container {
+    margin: 8px 0;
+}
+.cyber-btn-sm {
+    background: transparent;
+    border: 1px solid var(--ba-blue);
+    color: var(--ba-blue);
+    padding: 5px 14px;
+    font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-shadow: 0 0 5px var(--ba-blue-glow);
+    box-shadow: 0 0 10px var(--ba-blue-glow);
+    transition: all 0.3s ease;
+    clip-path: polygon(0 0, 92% 0, 100% 30%, 100% 100%, 8% 100%, 0 70%);
+}
+.cyber-btn-sm:hover {
+    background: var(--ba-blue);
+    color: #16161A;
+    box-shadow: 0 0 15px var(--ba-blue);
+}
+
+/* ============================================================================
+   6つの独立トグルボタン用 スタイル＆非表示定義（データ安全・完全分離）
+   ============================================================================ */
+
+/* トグルボタン自体の共通スタイル（小さめサイズ） */
+.btn-toggle-sect {
+    padding: 6px 10px !important;
+    font-size: 0.85rem !important;
+    opacity: 0.5;
+    background: rgba(120, 120, 120, 0.1) !important;
+    border: 1px solid rgba(120, 120, 120, 0.2) !important;
+    color: var(--text-sub) !important;
+    transition: all 0.2s ease;
+}
+
+/* 表示中（ON状態）の時のアロナモードでの色 */
+.btn-toggle-sect.active {
+    opacity: 1;
+    background: rgba(0, 178, 255, 0.15) !important;
+    border-color: rgba(0, 178, 255, 0.4) !important;
+    color: var(--ba-blue) !important;
+}
+
+/* 表示中（ON状態）の時のプラナモードでの色 */
+[data-theme="plana"] .btn-toggle-sect.active {
+    background: rgba(163, 161, 247, 0.2) !important;
+    border-color: rgba(163, 161, 247, 0.5) !important;
+    color: #A3A1F7 !important;
+}
+
+/* --- 各セクションの非表示ルール --- */
+
+/* 1. 基本情報の非表示 */
+#studentContainer.hide-basic .stats-section,
+#studentContainer.hide-basic .profile-section {
+    display: none !important;
+}
+
+/* 2. EXスキルの非表示 */
+#studentContainer.hide-ex .skill-block[data-skill-type="ex"],
+#studentContainer.hide-ex .skill-block:nth-child(1) {
+    display: none !important;
+}
+
+/* 3. NSスキルの非表示 */
+#studentContainer.hide-ns .skill-block[data-skill-type="ns"],
+#studentContainer.hide-ns .skill-block:nth-child(2) {
+    display: none !important;
+}
+
+/* 4. PSスキルの非表示 */
+#studentContainer.hide-ps .skill-block[data-skill-type="ps"],
+#studentContainer.hide-ps .skill-block:nth-child(3) {
+    display: none !important;
+}
+
+/* 5. SSスキルの非表示 */
+#studentContainer.hide-ss .skill-block[data-skill-type="ss"],
+#studentContainer.hide-ss .skill-block:nth-child(4) {
+    display: none !important;
+}
+
+/* 6. 愛用品・贈り物の非表示 */
+#studentContainer.hide-gear .items-section,
+#studentContainer.hide-gear .item-row {
+    display: none !important;
+}
+
+/* ============================================================================
+   【プラナモード専用】下部固定ページ送り＆表示件数エリア 確定同期CSS
+   ============================================================================ */
+[data-theme="plana"] .pagination-container {
+    background: #1A1A24 !important; /* カードと同じ深いダークグレー */
+    border-top: 2px solid rgba(163, 161, 247, 0.4) !important; /* プラナバイオレットの境界線 */
+    box-shadow: 0 -5px 25px rgba(163, 161, 247, 0.15) !important;
+}
+
+/* ページ送り内のテキスト（○〜○件 / 全○件） */
+[data-theme="plana"] .pagination-info {
+    color: #A3A1F7 !important;
+}
+
+/* 各ページ番号・矢印ボタンの通常状態 */
+[data-theme="plana"] .pagination-btn {
+    background: #222232 !important; /* スキルブロックと同じ明るめのダークグレー */
+    color: #F1F5F9 !important;      /* 読みやすい白に近い文字色 */
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+
+/* ボタンにマウスを乗せた時（ホバー） */
+[data-theme="plana"] .pagination-btn:hover:not(.disabled) {
+    background: rgba(163, 161, 247, 0.2) !important;
+    color: #A3A1F7 !important;
+    border-color: #A3A1F7 !important;
+}
+
+/* 現在選択されているアクティブなページ番号 */
+[data-theme="plana"] .pagination-btn.active {
+    background: #A3A1F7 !important; /* プラナバイオレット */
+    color: #121216 !important;       /* 文字を濃いグレーにして視認性を確保 */
+    border-color: #A3A1F7 !important;
+}
+
+/* 押せない状態のボタン（最初のページでの「前へ」など） */
+[data-theme="plana"] .pagination-btn.disabled {
+    background: rgba(26, 26, 36, 0.5) !important;
+    color: rgba(148, 163, 184, 0.3) !important;
+    border-color: rgba(163, 161, 247, 0.1) !important;
+}
+
+/* 件数表示（DISPLAY LIMIT）の外枠ラッパーの背景白浮きも同時に完全防止 */
+[data-theme="plana"] .search-limit-wrapper {
+    background: #1A1A24 !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+/* ============================================================================
+   【確定版】テーマ切り替え完全追従型スタイル・バッジ同期定義
+   ============================================================================ */
+
+/* 一覧内の「分解」「複合装甲」バッジ設定（88行目の爆発・軽装備と完全に同一の記述形式） */
+.attr-break, .attr-composite { color: var(--ns-color) !important; border-color: rgba(16, 185, 129, 0.2) !important; background-color: rgba(16, 185, 129, 0.05) !important; }
+[data-theme="plana"] .attr-break, [data-theme="plana"] .attr-composite { color: #34D399 !important; border-color: rgba(52, 211, 153, 0.3) !important; background-color: rgba(52, 211, 153, 0.1) !important; }
+
+/* プラナモード（ダーク背景）時の検索エリア（白浮き防止・即時連動） */
+[data-theme="plana"] .search-box {
+    background: #1A1A24 !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+    color: #FFFFFF !important;
+}
+[data-theme="plana"] .search-box input {
+    color: #FFFFFF !important;
+}
+[data-theme="plana"] .filter-grid {
+    background: rgba(26, 26, 36, 0.95) !important;
+    border: 1px solid rgba(163, 161, 247, 0.2) !important;
+}
+
+/* 表示件数（DISPLAY LIMIT）エリアのプラナモード時即時連動 */
+[data-theme="plana"] .search-limit-wrapper {
+    background: #1A1A24 !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+[data-theme="plana"] #displayLimitSelect {
+    background: transparent !important;
+    color: #FFFFFF !important;
+}
+
+/* プラナモード（ダーク背景）時の下部固定ページ送りエリア連動 */
+[data-theme="plana"] .pagination-container {
+    background: #1A1A24 !important;
+    border-top: 2px solid rgba(163, 161, 247, 0.4) !important;
+    box-shadow: 0 -5px 25px rgba(163, 161, 247, 0.15) !important;
+}
+[data-theme="plana"] .pagination-info {
+    color: #A3A1F7 !important;
+}
+[data-theme="plana"] .pagination-btn {
+    background: #222232 !important;
+    color: #F1F5F9 !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+[data-theme="plana"] .pagination-btn:hover:not(.disabled) {
+    background: rgba(163, 161, 247, 0.2) !important;
+    color: #A3A1F7 !important;
+    border-color: #A3A1F7 !important;
+}
+[data-theme="plana"] .pagination-btn.active {
+    background: #A3A1F7 !important;
+    color: #121216 !important;
+    border-color: #A3A1F7 !important;
+}
+[data-theme="plana"] .pagination-btn.disabled {
+    background: rgba(26, 26, 36, 0.5) !important;
+    color: rgba(148, 163, 184, 0.3) !important;
+    border-color: rgba(163, 161, 247, 0.1) !important;
+}
+/* ============================================================================
+   【確定版】テーマ切り替え完全追従型スタイル・バッジ同期定義
+   ============================================================================ */
+
+/* 一覧内の「分解」「複合装甲」バッジ設定（88行目の爆発・軽装備と完全に同一の記述形式） */
+.attr-break, .attr-composite { color: var(--ns-color) !important; border-color: rgba(16, 185, 129, 0.2) !important; background-color: rgba(16, 185, 129, 0.05) !important; }
+[data-theme="plana"] .attr-break, [data-theme="plana"] .attr-composite { color: #34D399 !important; border-color: rgba(52, 211, 153, 0.3) !important; background-color: rgba(52, 211, 153, 0.1) !important; }
+
+/* プラナモード（ダーク背景）時の検索エリア全体の即時追従 */
+[data-theme="plana"] .search-box {
+    background: #1A1A24 !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+    color: #FFFFFF !important;
+}
+[data-theme="plana"] .search-box input {
+    color: #FFFFFF !important;
+}
+[data-theme="plana"] .filter-grid {
+    background: rgba(26, 26, 36, 0.95) !important;
+    border: 1px solid rgba(163, 161, 247, 0.2) !important;
+}
+
+/* 表示件数（DISPLAY LIMIT）エリアおよび「展開される選択肢リスト」のプラナ同期 */
+[data-theme="plana"] .search-limit-wrapper {
+    background: #1A1A24 !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+[data-theme="plana"] #displayLimitSelect {
+    background: #1A1A24 !important; /* transparentから固定色に変更しブラウザ依存の白を上書き */
+    color: #FFFFFF !important;
+}
+/* 【不具合直接修正】ドロップダウンをクリックして展開されるリスト項目（option）の背景が白くなるのを防止 */
+[data-theme="plana"] #displayLimitSelect option {
+    background-color: #1A1A24 !important; /* 展開されたリストの背景をダークグレーに固定 */
+    color: #FFFFFF !important;            /* 文字色を白に固定して視認性を確保 */
+}
+
+/* プラナモード（ダーク背景）時の下部固定ページ送りエリアの即時追従 */
+[data-theme="plana"] .pagination-container {
+    background: #1A1A24 !important;
+    border-top: 2px solid rgba(163, 161, 247, 0.4) !important;
+    box-shadow: 0 -5px 25px rgba(163, 161, 247, 0.15) !important;
+}
+[data-theme="plana"] .pagination-info {
+    color: #A3A1F7 !important;
+}
+[data-theme="plana"] .pagination-btn {
+    background: #222232 !important;
+    color: #F1F5F9 !important;
+    border: 1px solid rgba(163, 161, 247, 0.3) !important;
+}
+[data-theme="plana"] .pagination-btn:hover:not(.disabled) {
+    background: rgba(163, 161, 247, 0.2) !important;
+    color: #A3A1F7 !important;
+    border-color: #A3A1F7 !important;
+}
+[data-theme="plana"] .pagination-btn.active {
+    background: #A3A1F7 !important;
+    color: #121216 !important;
+    border-color: #A3A1F7 !important;
+}
+[data-theme="plana"] .pagination-btn.disabled {
+    background: rgba(26, 26, 36, 0.5) !important;
+    color: rgba(148, 163, 184, 0.3) !important;
+    border-color: rgba(163, 161, 247, 0.1) !important;
+}
+/* アロナモード（通常時）のフィルターグリッド背景 */
+#filterGrid {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 178, 255, 0.15);
+}
+
+/* プラナモード時のフィルターグリッド背景 */
+[data-theme="plana"] #filterGrid {
+    background: #222232;
+    border-color: rgba(163, 161, 247, 0.25);
+}
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="system-frame">
+        <header>
+            <div class="title-group">
+                <h1>【ブルーアーカイブ生徒データベース】 <span>Blue Archive Student Database</span></h1>
+                
+                <p>Student information for SCHALE (confidential to relevant parties)</p>
+                
+                <div class="mode-switcher-container">
+                    <button id="modeToggleBtn" class="cyber-btn-sm" onclick="toggleThemeMode()">
+                        <i class="fa-solid fa-circle-half-stroke"></i> SYSTEM: ARONA MODE
+                    </button>
+                </div>
+
+            </div>
+        </header>
+        <div class="control-panel">
+            <div class="search-controls">
+                <button type="button" id="favFilterBtn" class="btn-fav-filter" style=" font-size: 24px" onclick="toggleFavFilter()">
+                    📌
+                </button>
+                <div class="search-wrapper" style="position: relative; display: flex; align-items: center;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="liveSearch" placeholder="生徒名、学校、スキル効果、贈り物などを入力..." oninput="toggleLiveSearchClearBtn()" style="flex: 1; padding-right: 36px;">
+                    <span id="liveSearchClearBtn" onclick="clearLiveSearchInput()" style="display: none; cursor: pointer; font-weight: bold; font-size: 16px; color: var(--ba-pink); position: absolute; right: 16px; z-index: 10; line-height: 1;">&times;</span>
+                </div>
+                
+                <button type="button" class="ba-btn btn-toggle-filter" id="btnToggleFilter" onclick="toggleFilterGrid()">
+                    <i class="fa-solid fa-sliders"></i> 詳細検索
+                </button>
+                
+                <div class="search-limit-wrapper">
+                    <i class="fa-solid fa-list-ol"></i>
+                    <select id="displayLimitSelect" class="search-limit-select" onchange="resetPageAndTriggerWithStorage()">
+                        <option value="10">10件</option>
+                        <option value="20">20件</option>
+                        <option value="50" selected>50件</option>
+                        <option value="100">100件</option>
+                        <option value="-1">全件</option>
+                    </select>
+                </div>
+                <button type="button" class="ba-btn btn-clear-filter" onclick="clearAllFilters()">
+                    <i class="fa-solid fa-trash-can"></i> 条件クリア
+                </button>
+                <div class="toggle-buttons-group" style="display: inline-flex; gap: 6px; margin-left: auto; vertical-align: middle;">
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ex')">EX</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ns')">NS</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ps')">PS</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ss')">SS</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-gear')">愛用品</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-grid" id="filterGrid">
+            <div class="filter-group">
+                <label>学校</label>
+                <div class="custom-dropdown" id="dropSchool">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropSchool')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="トリニティ" onchange="updateDropdownText('dropSchool')"> トリニティ</div>
+                        <div class="dropdown-option"><input type="checkbox" value="ミレニアム" onchange="updateDropdownText('dropSchool')"> ミレニアム</div>
+                        <div class="dropdown-option"><input type="checkbox" value="ゲヘナ" onchange="updateDropdownText('dropSchool')"> ゲヘナ</div>
+                        <div class="dropdown-option"><input type="checkbox" value="アビドス" onchange="updateDropdownText('dropSchool')"> アビドス</div>
+                        <div class="dropdown-option"><input type="checkbox" value="百鬼夜行" onchange="updateDropdownText('dropSchool')"> 百鬼夜行</div>
+                        <div class="dropdown-option"><input type="checkbox" value="山海経" onchange="updateDropdownText('dropSchool')"> 山海経</div>
+                        <div class="dropdown-option"><input type="checkbox" value="レッドウィンター" onchange="updateDropdownText('dropSchool')"> レッドウィンター</div>
+                        <div class="dropdown-option"><input type="checkbox" value="ヴァルキューレ" onchange="updateDropdownText('dropSchool')"> ヴァルキューレ</div>
+                        <div class="dropdown-option"><input type="checkbox" value="SRT" onchange="updateDropdownText('dropSchool')"> SRT</div>
+                        <div class="dropdown-option"><input type="checkbox" value="アリウス" onchange="updateDropdownText('dropSchool')"> アリウス</div>
+                        <div class="dropdown-option"><input type="checkbox" value="ハイランダー" onchange="updateDropdownText('dropSchool')"> ハイランダー</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>ST / SP</label>
+                <div class="custom-dropdown" id="dropType">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropType')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="STRIKER" onchange="updateDropdownText('dropType')"> STRIKER</div>
+                        <div class="dropdown-option"><input type="checkbox" value="SPECIAL" onchange="updateDropdownText('dropType')"> SPECIAL</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>武器</label> 
+                <div class="custom-dropdown" id="dropWeapon">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropWeapon')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="HG" onchange="updateDropdownText('dropWeapon')"> HG</div>
+                        <div class="dropdown-option"><input type="checkbox" value="SG" onchange="updateDropdownText('dropWeapon')"> SG</div>
+                        <div class="dropdown-option"><input type="checkbox" value="SMG" onchange="updateDropdownText('dropWeapon')"> SMG</div>
+                        <div class="dropdown-option"><input type="checkbox" value="AR" onchange="updateDropdownText('dropWeapon')"> AR</div>
+                        <div class="dropdown-option"><input type="checkbox" value="MG" onchange="updateDropdownText('dropWeapon')"> MG</div>
+                        <div class="dropdown-option"><input type="checkbox" value="SR" onchange="updateDropdownText('dropWeapon')"> SR</div>
+                        <div class="dropdown-option"><input type="checkbox" value="RG" onchange="updateDropdownText('dropWeapon')"> RG</div>
+                        <div class="dropdown-option"><input type="checkbox" value="RL" onchange="updateDropdownText('dropWeapon')"> RL</div>
+                        <div class="dropdown-option"><input type="checkbox" value="GL" onchange="updateDropdownText('dropWeapon')"> GL</div>
+                        <div class="dropdown-option"><input type="checkbox" value="MT" onchange="updateDropdownText('dropWeapon')"> MT</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>遮蔽物</label>
+                <div class="custom-dropdown" id="dropCover">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropCover')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="○" onchange="updateDropdownText('dropCover')"> ○ (使用する)</div>
+                        <div class="dropdown-option"><input type="checkbox" value="×" onchange="updateDropdownText('dropCover')"> × (使用しない)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>役割</label>
+                <div class="custom-dropdown" id="dropRole">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropRole')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="サポーター" onchange="updateDropdownText('dropRole')"> サポーター</div>
+                        <div class="dropdown-option"><input type="checkbox" value="アタッカー" onchange="updateDropdownText('dropRole')"> アタッカー</div>
+                        <div class="dropdown-option"><input type="checkbox" value="タンク" onchange="updateDropdownText('dropRole')"> タンク</div>
+                        <div class="dropdown-option"><input type="checkbox" value="ヒーラー" onchange="updateDropdownText('dropRole')"> ヒーラー</div>
+                        <div class="dropdown-option"><input type="checkbox" value="T.S" onchange="updateDropdownText('dropRole')"> T.S</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>位置</label>
+                <div class="custom-dropdown" id="dropPos">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropPos')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="FRONT" onchange="updateDropdownText('dropPos')"> FRONT</div>
+                        <div class="dropdown-option"><input type="checkbox" value="MIDDLE" onchange="updateDropdownText('dropPos')"> MIDDLE</div>
+                        <div class="dropdown-option"><input type="checkbox" value="BACK" onchange="updateDropdownText('dropPos')"> BACK</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>攻撃タイプ</label>
+                <div class="custom-dropdown" id="dropAttack">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropAttack')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option opt-explosive"><input type="checkbox" value="爆発" onchange="updateDropdownText('dropAttack')"> 爆発</div>
+                        <div class="dropdown-option opt-piercing"><input type="checkbox" value="貫通" onchange="updateDropdownText('dropAttack')"> 貫通</div>
+                        <div class="dropdown-option opt-mystic"><input type="checkbox" value="神秘" onchange="updateDropdownText('dropAttack')"> 神秘</div>
+                        <div class="dropdown-option opt-sonic"><input type="checkbox" value="振動" onchange="updateDropdownText('dropAttack')"> 振動</div>
+                        <div class="dropdown-option opt-sonic"><input type="checkbox" value="分解" onchange="updateDropdownText('dropAttack')"> 分解</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>防御タイプ</label>
+                <div class="custom-dropdown" id="dropDefense">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropDefense')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option opt-explosive"><input type="checkbox" value="軽装備" onchange="updateDropdownText('dropDefense')"> 軽装備</div>
+                        <div class="dropdown-option opt-piercing"><input type="checkbox" value="重装甲" onchange="updateDropdownText('dropDefense')"> 重装甲</div>
+                        <div class="dropdown-option opt-mystic"><input type="checkbox" value="特殊装甲" onchange="updateDropdownText('dropDefense')"> 特殊装甲</div>
+                        <div class="dropdown-option opt-sonic"><input type="checkbox" value="弾力装甲" onchange="updateDropdownText('dropDefense')"> 弾力装甲</div>
+                        <div class="dropdown-option opt-sonic"><input type="checkbox" value="複合装甲" onchange="updateDropdownText('dropDefense')"> 複合装甲</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>EXコスト</label>
+                <div class="custom-dropdown" id="dropExCost">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropExCost')">選択してください</div>
+                    <div class="dropdown-content" id="dropExCostContent"></div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>市街地適正</label>
+                <div class="custom-dropdown" id="dropUrban">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropUrban')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="SS" onchange="updateDropdownText('dropUrban')"> SS</div>
+                        <div class="dropdown-option"><input type="checkbox" value="S" onchange="updateDropdownText('dropUrban')"> S</div>
+                        <div class="dropdown-option"><input type="checkbox" value="A" onchange="updateDropdownText('dropUrban')"> A</div>
+                        <div class="dropdown-option"><input type="checkbox" value="B" onchange="updateDropdownText('dropUrban')"> B</div>
+                        <div class="dropdown-option"><input type="checkbox" value="C" onchange="updateDropdownText('dropUrban')"> C</div>
+                        <div class="dropdown-option"><input type="checkbox" value="D" onchange="updateDropdownText('dropUrban')"> D</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>屋外適正</label>
+                <div class="custom-dropdown" id="dropOutdoor">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropOutdoor')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="SS" onchange="updateDropdownText('dropOutdoor')"> SS</div>
+                        <div class="dropdown-option"><input type="checkbox" value="S" onchange="updateDropdownText('dropOutdoor')"> S</div>
+                        <div class="dropdown-option"><input type="checkbox" value="A" onchange="updateDropdownText('dropOutdoor')"> A</div>
+                        <div class="dropdown-option"><input type="checkbox" value="B" onchange="updateDropdownText('dropOutdoor')"> B</div>
+                        <div class="dropdown-option"><input type="checkbox" value="C" onchange="updateDropdownText('dropOutdoor')"> C</div>
+                        <div class="dropdown-option"><input type="checkbox" value="D" onchange="updateDropdownText('dropOutdoor')"> D</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>屋内適正</label>
+                <div class="custom-dropdown" id="dropIndoor">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropIndoor')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="SS" onchange="updateDropdownText('dropIndoor')"> SS</div>
+                        <div class="dropdown-option"><input type="checkbox" value="S" onchange="updateDropdownText('dropIndoor')"> S</div>
+                        <div class="dropdown-option"><input type="checkbox" value="A" onchange="updateDropdownText('dropIndoor')"> A</div>
+                        <div class="dropdown-option"><input type="checkbox" value="B" onchange="updateDropdownText('dropIndoor')"> B</div>
+                        <div class="dropdown-option"><input type="checkbox" value="C" onchange="updateDropdownText('dropIndoor')"> C</div>
+                        <div class="dropdown-option"><input type="checkbox" value="D" onchange="updateDropdownText('dropIndoor')"> D</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>装備</label>
+                <div class="custom-dropdown" id="dropGear">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropGear')">選択してください</div>
+                    <div class="dropdown-content">
+                        <div class="dropdown-option"><input type="checkbox" value="シューズ" onchange="updateDropdownText('dropGear')"> シューズ</div>
+                        <div class="dropdown-option"><input type="checkbox" value="バッグ" onchange="updateDropdownText('dropGear')"> バッグ</div>
+                        <div class="dropdown-option"><input type="checkbox" value="バッジ" onchange="updateDropdownText('dropGear')"> バッジ</div>
+                        <div class="dropdown-option"><input type="checkbox" value="ヘアピン" onchange="updateDropdownText('dropGear')"> ヘアピン</div>
+                        <div class="dropdown-option"><input type="checkbox" value="帽子" onchange="updateDropdownText('dropGear')"> 帽子</div>
+                        <div class="dropdown-option"><input type="checkbox" value="グローブ" onchange="updateDropdownText('dropGear')"> グローブ</div>
+                        <div class="dropdown-option"><input type="checkbox" value="腕時計" onchange="updateDropdownText('dropGear')"> 腕時計</div>
+                        <div class="dropdown-option"><input type="checkbox" value="お守り" onchange="updateDropdownText('dropGear')"> お守り</div>
+                        <div class="dropdown-option"><input type="checkbox" value="ネックレス" onchange="updateDropdownText('dropGear')"> ネックレス</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>スキルタグ</label>
+                <div class="custom-dropdown" id="dropTags">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropTags')">選択してください</div>
+                    <div class="dropdown-content" id="dropTagsContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="student-container" id="studentContainer">
+            <div class="status-message">データベースシステム起動中...</div>
+        </div>
+
+        <footer>
+            &copy; SCHALE Specified Non-Profit Corporation
+        </footer>
+    </div>
+</div>
+
+<div id="paginationContainer"></div>
+
+<script src="data.js"></script>
+<script src="db.js"></script>
+</body>
+</html>
