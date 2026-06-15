@@ -1061,6 +1061,265 @@
     border-color: rgba(163, 161, 247, 0.25);
 }
 
+
+/* 開閉用の下向き矢印の配置を元の高さの中央に完全固定 */
+.dropdown-button::after {
+    position: absolute !important;
+    right: 10px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    z-index: 5;
+    pointer-events: none;
+}
+.custom-dropdown.open .dropdown-button::after {
+    transform: translateY(-50%) rotate(180deg) !important;
+}
+
+/* コントロール内の右端に配置する、全体クリア用のピンクの×ボタン配置を完全固定 */
+.dropdown-button .dropdown-clear-btn {
+    position: absolute !important;
+    right: 26px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    padding: 0 4px !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+    font-size: 14px !important;
+    color: var(--ba-pink) !important;
+    display: inline-block !important;
+    z-index: 6;
+}
+
+/* バッジを並べるインラインコンテナ（高さ32pxを超えないよう制限） */
+.badge-container-inline {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+}
+
+/* 選択された個別のバッジスタイル */
+.selected-badge {
+    background-color: var(--ba-blue);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px;
+    user-select: none;
+    z-index: 2;
+    height: 18px !important;
+    line-height: 18px !important;
+}
+
+/* バッジ内の個別解除×ボタン */
+.selected-badge i.fa-xmark {
+    cursor: pointer;
+    font-size: 9px;
+    opacity: 0.8;
+    transition: opacity 0.15s;
+    display: inline-block !important;
+}
+.selected-badge i.fa-xmark:hover {
+    opacity: 1;
+}
+
+/* 選択反転されたドロップダウンアイテムの見た目 */
+.dropdown-option.selected {
+    background-color: var(--ba-blue) !important;
+    color: #fff !important;
+    font-weight: 700;
+}
+/* ====================================================================
+   【スキルタグ専用】ラベルとコントロールを完全に左右（横並び）に配置するスタイル
+   ==================================================================== */
+/* スキルタグの親グループだけをピンポイントで横並びに変更 */
+.filter-group:has(#dropTags) {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    /* グリッド内で2列分の幅を確保して横並びスペースを広げる */
+    grid-column: span 2 !important; 
+}
+
+/* スキルタグのラベルテキストを左側に固定 */
+.filter-group:has(#dropTags) label {
+    margin: 0 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+/* スキルタグのドロップダウン本体を右側に引き伸ばす */
+.filter-group:has(#dropTags) .custom-dropdown {
+    flex-grow: 1 !important;
+    width: auto !important;
+}
+
+/* ============================================================================
+   【アークナイツ版移植】コントロールの可変フレックス化 ＆ リスト反転色の調整
+   ============================================================================ */
+
+/* 1. ドロップダウンを横並びにしている親グリッドの38px固定と隠蔽(hidden)を解除 */
+.filter-grid {
+    height: auto !important;
+    overflow: visible !important;
+}
+.search-container {
+    overflow: visible !important;
+}
+
+/* 2. コントロール（旧ボタン要素）をdivとして、最初から折り返し可能な箱として再定義 */
+.custom-dropdown .dropdown-button {
+    display: flex !important;
+    flex-wrap: wrap !important;          /* 限界が来たら2行目、3行目へ自動折り返し */
+    gap: 6px !important;                 /* バッジ同士の適正な隙間 */
+    height: auto !important;             /* ★高さを完全に自動可変(auto)にする */
+    min-height: 38px !important;         /* 未選択時のスマートな最低高さを保証 */
+    line-height: 1.4 !important;         /* 38pxの1行ロックを完全に破壊 */
+    padding: 8px 36px 8px 12px !important; /* 複数行に広がっても上下が潰れない安全な余白 */
+    white-space: normal !important;      /* 1行強制を解除 */
+    align-items: center;
+    box-sizing: border-box !important;
+}
+
+/* 3. コントロールが縦長に伸びても、背景全体が青く染まって見苦しくなるのを防止 */
+.custom-dropdown .dropdown-button.active {
+    background-color: #ffffff !important; 
+    border-color: var(--ba-blue) !important;
+    box-shadow: 0 0 8px var(--ba-blue-glow) !important;
+}
+
+/* 4. ご指摘のあった「リスト側の反転行」を見苦しくない洗練された半透明ブルーにする */
+.custom-dropdown .dropdown-option.selected {
+    background-color: rgba(0, 178, 255, 0.15) !important; /* 透明感のある青 */
+    color: var(--ba-blue) !important;
+    font-weight: bold !important;
+}
+.custom-dropdown .dropdown-option:hover {
+    background-color: rgba(0, 178, 255, 0.1) !important;
+}
+
+/* 5. 右端の一括クリア「×」ボタンが、行の拡張に引っ張られて位置崩れを起こさないための絶対固定 */
+.dropdown-clear-btn {
+    position: absolute !important;
+    right: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    line-height: 1 !important;
+    z-index: 10 !important;
+}
+/* ============================================================================
+   【完全独立】スキルタグ専用クラス（skill-tag-dropdown / content）設定
+   ============================================================================ */
+.skill-tag-dropdown {
+    position: relative !important;
+}
+
+.skill-tag-dropdown .skill-tag-content {
+    display: none;                     /* 閉じている時は非表示 */
+    position: absolute !important;
+    top: 100% !important;
+    right: 0 !important;               /* 右端基準で綺麗に下に展開 */
+    left: auto !important;
+    min-width: 250px !important;       /* 通常のドロップダウンと同等のスマートな幅 */
+    max-height: 400px !important;      /* スクロールを許可 */
+    background-color: #ffffff !important;
+    border: 1px solid #dcdde1 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    padding: 8px !important;
+    z-index: 1000 !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+}
+
+/* JavaScriptでopenクラスがついた時、またはボタンがactiveの時に確実に1列でリストを展開 */
+.skill-tag-dropdown.open .skill-tag-content {
+    display: block !important;
+}
+/* ============================================================================
+   スキルタグ専用（skill-tag-dropdown / content / option）完全独立スタイル
+   ============================================================================ */
+.skill-tag-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+/* 閉じている時は非表示、開いた（.open）の時だけ確実に直下に1列展開 */
+.skill-tag-dropdown .skill-tag-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid rgba(0, 178, 255, 0.2);
+    border-radius: 6px;
+    margin-top: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 999;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    padding: 6px;
+}
+
+.skill-tag-dropdown.open .skill-tag-content {
+    display: block;
+}
+
+/* スキルタグ内の各項目（1列表示用のデザイン） */
+.skill-tag-dropdown .skill-tag-content .skill-tag-option {
+    color: var(--text-main);
+    transition: background 0.15s;
+    border-radius: 4px;
+}
+
+.skill-tag-dropdown .skill-tag-content .skill-tag-option:hover {
+    background: #EDF8FF;
+}
+
+/* チェックが入った際のハイライト表示 */
+.skill-tag-dropdown .skill-tag-content .skill-tag-option.selected {
+    background: rgba(255, 111, 162, 0.1);
+    color: var(--ba-pink);
+    font-weight: bold;
+}
+
+/* プラナテーマ（ダークモード）適用時のカラー同期 */
+[data-theme="plana"] .skill-tag-dropdown .skill-tag-content {
+    background: #222232 !important;
+    border-color: rgba(163, 161, 247, 0.3) !important;
+}
+[data-theme="plana"] .skill-tag-dropdown .skill-tag-content .skill-tag-option {
+    color: #ffffff !important;
+}
+[data-theme="plana"] .skill-tag-dropdown .skill-tag-content .skill-tag-option:hover {
+    background: rgba(163, 161, 247, 0.15) !important;
+}
+/* 🌟【フリーワード検索の×ボタン上下中央バグ修正・解決版】 */
+.search-wrapper {
+    position: relative !important; /* ×ボタンが入力欄の枠内を基準に動くように固定 */
+}
+
+#liveSearchClearBtn {
+    /* 🌟 display の強制指定（!important）を完全に排除しました */
+    /* これにより、JavaScript側の「消す（none）」「出す（block等）」という制御が100%最優先で動作します */
+    
+    position: absolute !important;
+    top: 50% !important;                      /* 入力欄の上から50%の位置へ配置 */
+    transform: translateY(-50%) !important;         /* 🌟ボタン自体の高さの半分だけ上に戻して完全上下中央化 */
+    right: 16px !important;                    /* 右端からの適切な距離 */
+    margin: 0 !important;
+    height: auto !important;
+    line-height: 1 !important;
+}
     </style>
 </head>
 <body>
@@ -1081,24 +1340,35 @@
 
             </div>
         </header>
+        
         <div class="control-panel">
             <div class="search-controls">
+            
                 <button type="button" id="favFilterBtn" class="btn-fav-filter" style=" font-size: 24px" onclick="toggleFavFilter()">
                     📌
                 </button>
-                <div class="search-wrapper" style="position: relative; display: flex; align-items: center;">
+                
+                <div class="search-wrapper">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="liveSearch" placeholder="生徒名、学校、スキル効果、贈り物などを入力..." oninput="toggleLiveSearchClearBtn()" style="flex: 1; padding-right: 36px;">
+                    <input type="text" id="liveSearch" class="input-live-search" placeholder="生徒名、CV、スキル効果、愛用品などを自由入力..." oninput="toggleLiveSearchClearBtn()" style="padding-right: 36px;" tabindex="1">
                     <span id="liveSearchClearBtn" onclick="clearLiveSearchInput()" style="display: none; cursor: pointer; font-weight: bold; font-size: 16px; color: var(--ba-pink); position: absolute; right: 16px; z-index: 10; line-height: 1;">&times;</span>
                 </div>
-                
-                <button type="button" class="ba-btn btn-toggle-filter" id="btnToggleFilter" onclick="toggleFilterGrid()">
+
+                <div class="filter-group">
+                    <label>スキルタグ</label>
+                    <div class="skill-tag-dropdown" id="dropTags" style="width: 580px !important; max-width: 100% !important; height: auto !important;">
+                        <div class="dropdown-button" onclick="toggleDropdown('dropTags')" style="height: auto !important;">選択してください</div>
+                        <div class="skill-tag-content"></div>
+                    </div>
+                </div>
+
+                <button type="button" class="ba-btn btn-toggle-filter" id="btnToggleFilter" onclick="toggleFilterGrid()" tabindex="3">
                     <i class="fa-solid fa-sliders"></i> 詳細検索
                 </button>
-                
+
                 <div class="search-limit-wrapper">
                     <i class="fa-solid fa-list-ol"></i>
-                    <select id="displayLimitSelect" class="search-limit-select" onchange="resetPageAndTriggerWithStorage()">
+                    <select id="displayLimitSelect" class="search-limit-select" onchange="resetPageAndTriggerWithStorage()" tabindex="4">
                         <option value="10">10件</option>
                         <option value="20">20件</option>
                         <option value="50" selected>50件</option>
@@ -1106,15 +1376,17 @@
                         <option value="-1">全件</option>
                     </select>
                 </div>
-                <button type="button" class="ba-btn btn-clear-filter" onclick="clearAllFilters()">
+
+                <button type="button" class="ba-btn btn-clear-filter" onclick="clearAllFilters()" tabindex="5">
                     <i class="fa-solid fa-trash-can"></i> 条件クリア
                 </button>
+
                 <div class="toggle-buttons-group" style="display: inline-flex; gap: 6px; margin-left: auto; vertical-align: middle;">
-                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ex')">EX</button>
-                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ns')">NS</button>
-                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ps')">PS</button>
-                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ss')">SS</button>
-                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-gear')">愛用品</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ex')" tabindex="6">EX</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ns')" tabindex="7">NS</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ps')" tabindex="8">PS</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-ss')" tabindex="9">SS</button>
+                    <button type="button" class="ba-btn btn-toggle-sect active" onclick="toggleSect(this, 'hide-gear')" tabindex="10">愛用品</button>
                 </div>
             </div>
         </div>
@@ -1125,17 +1397,16 @@
                 <div class="custom-dropdown" id="dropSchool">
                     <div class="dropdown-button" onclick="toggleDropdown('dropSchool')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="トリニティ" onchange="updateDropdownText('dropSchool')"> トリニティ</div>
-                        <div class="dropdown-option"><input type="checkbox" value="ミレニアム" onchange="updateDropdownText('dropSchool')"> ミレニアム</div>
-                        <div class="dropdown-option"><input type="checkbox" value="ゲヘナ" onchange="updateDropdownText('dropSchool')"> ゲヘナ</div>
-                        <div class="dropdown-option"><input type="checkbox" value="アビドス" onchange="updateDropdownText('dropSchool')"> アビドス</div>
-                        <div class="dropdown-option"><input type="checkbox" value="百鬼夜行" onchange="updateDropdownText('dropSchool')"> 百鬼夜行</div>
-                        <div class="dropdown-option"><input type="checkbox" value="山海経" onchange="updateDropdownText('dropSchool')"> 山海経</div>
-                        <div class="dropdown-option"><input type="checkbox" value="レッドウィンター" onchange="updateDropdownText('dropSchool')"> レッドウィンター</div>
-                        <div class="dropdown-option"><input type="checkbox" value="ヴァルキューレ" onchange="updateDropdownText('dropSchool')"> ヴァルキューレ</div>
-                        <div class="dropdown-option"><input type="checkbox" value="SRT" onchange="updateDropdownText('dropSchool')"> SRT</div>
-                        <div class="dropdown-option"><input type="checkbox" value="アリウス" onchange="updateDropdownText('dropSchool')"> アリウス</div>
-                        <div class="dropdown-option"><input type="checkbox" value="ハイランダー" onchange="updateDropdownText('dropSchool')"> ハイランダー</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">トリニティ</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">ミレニアム</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">ゲヘナ</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">アビドス</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">百鬼夜行</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">山海経</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">レッドウィンター</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">ヴァルキューレ</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">SRT</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropSchool')">アリウス</div>
                     </div>
                 </div>
             </div>
@@ -1145,38 +1416,38 @@
                 <div class="custom-dropdown" id="dropType">
                     <div class="dropdown-button" onclick="toggleDropdown('dropType')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="STRIKER" onchange="updateDropdownText('dropType')"> STRIKER</div>
-                        <div class="dropdown-option"><input type="checkbox" value="SPECIAL" onchange="updateDropdownText('dropType')"> SPECIAL</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropType')">STRIKER</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropType')">SPECIAL</div>
                     </div>
                 </div>
             </div>
 
             <div class="filter-group">
-                <label>武器</label> 
+                <label>武器種</label>
                 <div class="custom-dropdown" id="dropWeapon">
                     <div class="dropdown-button" onclick="toggleDropdown('dropWeapon')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="HG" onchange="updateDropdownText('dropWeapon')"> HG</div>
-                        <div class="dropdown-option"><input type="checkbox" value="SG" onchange="updateDropdownText('dropWeapon')"> SG</div>
-                        <div class="dropdown-option"><input type="checkbox" value="SMG" onchange="updateDropdownText('dropWeapon')"> SMG</div>
-                        <div class="dropdown-option"><input type="checkbox" value="AR" onchange="updateDropdownText('dropWeapon')"> AR</div>
-                        <div class="dropdown-option"><input type="checkbox" value="MG" onchange="updateDropdownText('dropWeapon')"> MG</div>
-                        <div class="dropdown-option"><input type="checkbox" value="SR" onchange="updateDropdownText('dropWeapon')"> SR</div>
-                        <div class="dropdown-option"><input type="checkbox" value="RG" onchange="updateDropdownText('dropWeapon')"> RG</div>
-                        <div class="dropdown-option"><input type="checkbox" value="RL" onchange="updateDropdownText('dropWeapon')"> RL</div>
-                        <div class="dropdown-option"><input type="checkbox" value="GL" onchange="updateDropdownText('dropWeapon')"> GL</div>
-                        <div class="dropdown-option"><input type="checkbox" value="MT" onchange="updateDropdownText('dropWeapon')"> MT</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">HG</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">SG</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">SMG</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">AR</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">MG</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">SR</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">RG</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">RL</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">GL</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropWeapon')">MT</div>
                     </div>
                 </div>
             </div>
 
             <div class="filter-group">
-                <label>遮蔽物</label>
+                <label>遮蔽</label>
                 <div class="custom-dropdown" id="dropCover">
                     <div class="dropdown-button" onclick="toggleDropdown('dropCover')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="○" onchange="updateDropdownText('dropCover')"> ○ (使用する)</div>
-                        <div class="dropdown-option"><input type="checkbox" value="×" onchange="updateDropdownText('dropCover')"> × (使用しない)</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropCover')">利用する</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropCover')">利用しない</div>
                     </div>
                 </div>
             </div>
@@ -1186,11 +1457,11 @@
                 <div class="custom-dropdown" id="dropRole">
                     <div class="dropdown-button" onclick="toggleDropdown('dropRole')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="サポーター" onchange="updateDropdownText('dropRole')"> サポーター</div>
-                        <div class="dropdown-option"><input type="checkbox" value="アタッカー" onchange="updateDropdownText('dropRole')"> アタッカー</div>
-                        <div class="dropdown-option"><input type="checkbox" value="タンク" onchange="updateDropdownText('dropRole')"> タンク</div>
-                        <div class="dropdown-option"><input type="checkbox" value="ヒーラー" onchange="updateDropdownText('dropRole')"> ヒーラー</div>
-                        <div class="dropdown-option"><input type="checkbox" value="T.S" onchange="updateDropdownText('dropRole')"> T.S</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropRole')">アタッカー</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropRole')">タンク</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropRole')">サポーター</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropRole')">ヒーラー</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropRole')">T.S</div>
                     </div>
                 </div>
             </div>
@@ -1200,9 +1471,9 @@
                 <div class="custom-dropdown" id="dropPos">
                     <div class="dropdown-button" onclick="toggleDropdown('dropPos')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="FRONT" onchange="updateDropdownText('dropPos')"> FRONT</div>
-                        <div class="dropdown-option"><input type="checkbox" value="MIDDLE" onchange="updateDropdownText('dropPos')"> MIDDLE</div>
-                        <div class="dropdown-option"><input type="checkbox" value="BACK" onchange="updateDropdownText('dropPos')"> BACK</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropPos')">FRONT</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropPos')">MIDDLE</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropPos')">BACK</div>
                     </div>
                 </div>
             </div>
@@ -1212,11 +1483,10 @@
                 <div class="custom-dropdown" id="dropAttack">
                     <div class="dropdown-button" onclick="toggleDropdown('dropAttack')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option opt-explosive"><input type="checkbox" value="爆発" onchange="updateDropdownText('dropAttack')"> 爆発</div>
-                        <div class="dropdown-option opt-piercing"><input type="checkbox" value="貫通" onchange="updateDropdownText('dropAttack')"> 貫通</div>
-                        <div class="dropdown-option opt-mystic"><input type="checkbox" value="神秘" onchange="updateDropdownText('dropAttack')"> 神秘</div>
-                        <div class="dropdown-option opt-sonic"><input type="checkbox" value="振動" onchange="updateDropdownText('dropAttack')"> 振動</div>
-                        <div class="dropdown-option opt-sonic"><input type="checkbox" value="分解" onchange="updateDropdownText('dropAttack')"> 分解</div>
+                        <div class="dropdown-option opt-explosive" onclick="toggleOptionSelect(this, 'dropAttack')">爆発</div>
+                        <div class="dropdown-option opt-piercing" onclick="toggleOptionSelect(this, 'dropAttack')">貫通</div>
+                        <div class="dropdown-option opt-mystic" onclick="toggleOptionSelect(this, 'dropAttack')">神秘</div>
+                        <div class="dropdown-option opt-sonic" onclick="toggleOptionSelect(this, 'dropAttack')">振動</div>
                     </div>
                 </div>
             </div>
@@ -1226,11 +1496,10 @@
                 <div class="custom-dropdown" id="dropDefense">
                     <div class="dropdown-button" onclick="toggleDropdown('dropDefense')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option opt-explosive"><input type="checkbox" value="軽装備" onchange="updateDropdownText('dropDefense')"> 軽装備</div>
-                        <div class="dropdown-option opt-piercing"><input type="checkbox" value="重装甲" onchange="updateDropdownText('dropDefense')"> 重装甲</div>
-                        <div class="dropdown-option opt-mystic"><input type="checkbox" value="特殊装甲" onchange="updateDropdownText('dropDefense')"> 特殊装甲</div>
-                        <div class="dropdown-option opt-sonic"><input type="checkbox" value="弾力装甲" onchange="updateDropdownText('dropDefense')"> 弾力装甲</div>
-                        <div class="dropdown-option opt-sonic"><input type="checkbox" value="複合装甲" onchange="updateDropdownText('dropDefense')"> 複合装甲</div>
+                        <div class="dropdown-option opt-explosive" onclick="toggleOptionSelect(this, 'dropDefense')">軽装備</div>
+                        <div class="dropdown-option opt-piercing" onclick="toggleOptionSelect(this, 'dropDefense')">重装甲</div>
+                        <div class="dropdown-option opt-mystic" onclick="toggleOptionSelect(this, 'dropDefense')">特殊装甲</div>
+                        <div class="dropdown-option opt-sonic" onclick="toggleOptionSelect(this, 'dropDefense')">弾力装甲</div>
                     </div>
                 </div>
             </div>
@@ -1244,73 +1513,65 @@
             </div>
 
             <div class="filter-group">
-                <label>市街地適正</label>
+                <label>市街地</label>
                 <div class="custom-dropdown" id="dropUrban">
                     <div class="dropdown-button" onclick="toggleDropdown('dropUrban')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="SS" onchange="updateDropdownText('dropUrban')"> SS</div>
-                        <div class="dropdown-option"><input type="checkbox" value="S" onchange="updateDropdownText('dropUrban')"> S</div>
-                        <div class="dropdown-option"><input type="checkbox" value="A" onchange="updateDropdownText('dropUrban')"> A</div>
-                        <div class="dropdown-option"><input type="checkbox" value="B" onchange="updateDropdownText('dropUrban')"> B</div>
-                        <div class="dropdown-option"><input type="checkbox" value="C" onchange="updateDropdownText('dropUrban')"> C</div>
-                        <div class="dropdown-option"><input type="checkbox" value="D" onchange="updateDropdownText('dropUrban')"> D</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropUrban')">SS</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropUrban')">S</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropUrban')">A</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropUrban')">B</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropUrban')">C</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropUrban')">D</div>
                     </div>
                 </div>
             </div>
 
             <div class="filter-group">
-                <label>屋外適正</label>
+                <label>屋外</label>
                 <div class="custom-dropdown" id="dropOutdoor">
                     <div class="dropdown-button" onclick="toggleDropdown('dropOutdoor')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="SS" onchange="updateDropdownText('dropOutdoor')"> SS</div>
-                        <div class="dropdown-option"><input type="checkbox" value="S" onchange="updateDropdownText('dropOutdoor')"> S</div>
-                        <div class="dropdown-option"><input type="checkbox" value="A" onchange="updateDropdownText('dropOutdoor')"> A</div>
-                        <div class="dropdown-option"><input type="checkbox" value="B" onchange="updateDropdownText('dropOutdoor')"> B</div>
-                        <div class="dropdown-option"><input type="checkbox" value="C" onchange="updateDropdownText('dropOutdoor')"> C</div>
-                        <div class="dropdown-option"><input type="checkbox" value="D" onchange="updateDropdownText('dropOutdoor')"> D</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropOutdoor')">SS</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropOutdoor')">S</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropOutdoor')">A</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropOutdoor')">B</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropOutdoor')">C</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropOutdoor')">D</div>
                     </div>
                 </div>
             </div>
 
             <div class="filter-group">
-                <label>屋内適正</label>
+                <label>屋内</label>
                 <div class="custom-dropdown" id="dropIndoor">
                     <div class="dropdown-button" onclick="toggleDropdown('dropIndoor')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="SS" onchange="updateDropdownText('dropIndoor')"> SS</div>
-                        <div class="dropdown-option"><input type="checkbox" value="S" onchange="updateDropdownText('dropIndoor')"> S</div>
-                        <div class="dropdown-option"><input type="checkbox" value="A" onchange="updateDropdownText('dropIndoor')"> A</div>
-                        <div class="dropdown-option"><input type="checkbox" value="B" onchange="updateDropdownText('dropIndoor')"> B</div>
-                        <div class="dropdown-option"><input type="checkbox" value="C" onchange="updateDropdownText('dropIndoor')"> C</div>
-                        <div class="dropdown-option"><input type="checkbox" value="D" onchange="updateDropdownText('dropIndoor')"> D</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropIndoor')">SS</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropIndoor')">S</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropIndoor')">A</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropIndoor')">B</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropIndoor')">C</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropIndoor')">D</div>
                     </div>
                 </div>
             </div>
 
             <div class="filter-group">
-                <label>装備</label>
+                <label>装備品</label>
                 <div class="custom-dropdown" id="dropGear">
                     <div class="dropdown-button" onclick="toggleDropdown('dropGear')">選択してください</div>
                     <div class="dropdown-content">
-                        <div class="dropdown-option"><input type="checkbox" value="シューズ" onchange="updateDropdownText('dropGear')"> シューズ</div>
-                        <div class="dropdown-option"><input type="checkbox" value="バッグ" onchange="updateDropdownText('dropGear')"> バッグ</div>
-                        <div class="dropdown-option"><input type="checkbox" value="バッジ" onchange="updateDropdownText('dropGear')"> バッジ</div>
-                        <div class="dropdown-option"><input type="checkbox" value="ヘアピン" onchange="updateDropdownText('dropGear')"> ヘアピン</div>
-                        <div class="dropdown-option"><input type="checkbox" value="帽子" onchange="updateDropdownText('dropGear')"> 帽子</div>
-                        <div class="dropdown-option"><input type="checkbox" value="グローブ" onchange="updateDropdownText('dropGear')"> グローブ</div>
-                        <div class="dropdown-option"><input type="checkbox" value="腕時計" onchange="updateDropdownText('dropGear')"> 腕時計</div>
-                        <div class="dropdown-option"><input type="checkbox" value="お守り" onchange="updateDropdownText('dropGear')"> お守り</div>
-                        <div class="dropdown-option"><input type="checkbox" value="ネックレス" onchange="updateDropdownText('dropGear')"> ネックレス</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">シューズ</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">バッグ</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">バッジ</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">ヘアピン</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">帽子</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">グローブ</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">腕時計</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">お守り</div>
+                        <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">ネックレス</div>
                     </div>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <label>スキルタグ</label>
-                <div class="custom-dropdown" id="dropTags">
-                    <div class="dropdown-button" onclick="toggleDropdown('dropTags')">選択してください</div>
-                    <div class="dropdown-content" id="dropTagsContent"></div>
                 </div>
             </div>
         </div>

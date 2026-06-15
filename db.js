@@ -6,6 +6,9 @@ let currentPage = 1;
 // お気に入り（生徒名）を保持する配列
 let favoriteStudents = [];
 
+// ============================================================================
+// 1. データ初期化 ＆ 検索エリア完全固定 ＆ 両モード背景色同期・透過防止（確定版）
+// ============================================================================
 function initDatabase() {
     try {
         // ローカルストレージからお気に入りリストを復元
@@ -16,9 +19,78 @@ function initDatabase() {
 
         if (typeof initialStudentsDataJSON !== 'undefined' && initialStudentsDataJSON.trim() !== '') {
             cachedStudents = JSON.parse(initialStudentsDataJSON);
-            applyBrowserZoom120(); // 画面全体を強制的に1.2倍（120%）サイズにする処理
+            applyBrowserZoom120(); // 画面全体を強制的に1.2倍サイズにする処理
             buildDynamicDropdowns(cachedStudents);
             renderStudentsList(cachedStudents);
+
+            // 🌟【確定版】右端見切れ対策 ＆ 上部2段固定用の基本CSS
+            const style = document.createElement('style');
+            style.textContent = `
+                header, .title-section, .mode-toggle-area {
+                    position: static !important;
+                }
+                .control-panel {
+                    position: sticky !important;
+                    top: 0 !important;
+                    z-index: 9999 !important;
+                    opacity: 1 !important;
+                    backdrop-filter: none !important; /* 🌟 既存の半透明ぼかし処理を強制解除 */
+                    padding-top: 10px !important;
+                    padding-bottom: 5px !important;
+                    padding-right: 25px !important; 
+                    box-sizing: border-box !important;
+                }
+                #filterGrid, .filter-grid {
+                    position: sticky !important;
+                    top: 55px !important; 
+                    z-index: 9998 !important;
+                    opacity: 1 !important;
+                    backdrop-filter: none !important; /* 🌟 既存の半透明ぼかし処理を強制解除 */
+                    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15) !important;
+                    padding-bottom: 12px !important;
+                    margin-bottom: 15px !important;
+                    padding-right: 25px !important;
+                    box-sizing: border-box !important;
+                }
+                .custom-dropdown, .skill-tag-dropdown, .dropdown-content, .skill-tag-content {
+                    z-index: 10000 !important;
+                }
+                #studentContainer {
+                    position: relative !important;
+                    z-index: 1 !important;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // 🌟【最重要】現在のモード（通常/プラナ）の生徒一覧の背景色を完全に吸い出すタイマー処理
+            // モード切り替えボタンを押した際にも連動するよう、短い周期で背景色を監視・同期します
+            setInterval(() => {
+                const controlPanel = document.querySelector('.control-panel');
+                const filterGrid = document.getElementById('filterGrid') || document.querySelector('.filter-grid');
+                
+                // 生徒一覧（#studentContainer）または全体の背景色を取得する対象候補
+                const bgTarget = document.getElementById('studentContainer') || document.body;
+                
+                if (bgTarget && controlPanel && filterGrid) {
+                    // 現在ブラウザが画面に描画している「実際の背景色」を計算して取得
+                    let currentBgColor = window.getComputedStyle(bgTarget).backgroundColor;
+                    
+                    // 万が一、背景色が完全に透明（transparentやrgba(0,0,0,0)）だった場合のセーフティ
+                    if (currentBgColor === 'transparent' || currentBgColor.replace(/\s/g, '') === 'rgba(0,0,0,0)') {
+                        currentBgColor = window.getComputedStyle(document.body).backgroundColor;
+                    }
+                    
+                    // 🌟 透過の原因となる「rgbaのアルファ値」を「1（不透明）」に強制書き換えする、またはそのまま適用
+                    if (currentBgColor.includes('rgba')) {
+                        currentBgColor = currentBgColor.replace(/[\d\.]+\)$/, '1)');
+                    }
+
+                    // 1段目と2段目の固定エリアに、生徒一覧と100%同じ不透明な背景色をリアルタイム上書き
+                    controlPanel.style.setProperty('background-color', currentBgColor, 'important');
+                    filterGrid.style.setProperty('background-color', currentBgColor, 'important');
+                }
+            }, 100); // 0.1秒ごとに背景色をチェックして完全に同期
+
         } else {
             throw new Error("外部データ(data.js)のinitialStudentsDataJSONが見つからないか、空です。");
         }
@@ -44,6 +116,12 @@ function applyBrowserZoom120() {
             margin: 0 auto !important;
         }
         
+        // ドロップダウンボタンに後から height='38px' を強制注入していた以下の記述を変更：
+    document.querySelectorAll('.dropdown-button').forEach(btn => {
+        // height や lineHeight の固定割り当てを完全に撤廃し、CSS側の可変設計を邪魔させないようにします
+        btn.style.minHeight = '38px';
+    });
+    
         /* ====================================================================
            カード内の左上お気に入りマーク（枠線なし・ピンのみ変化）
            ==================================================================== */
@@ -112,6 +190,52 @@ function applyBrowserZoom120() {
         .btn-fav-filter.not-fav {
             color: var(--text-main, #333333) !important;
         }
+        
+        /* キャラ名エリアのCV用微調整 */
+        .student-cv {
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        /* ====================================================================
+           非表示連動時のグリッド・均等比率幅調整の決定版CSS
+           ==================================================================== */
+        /* カード全体のグリッド設計を2カラムから1カラム（柔軟な結合型）へ変更し、CSS側の干渉を無効化 */
+        .student-row {
+            display: grid !important;
+            grid-template-columns: 180px 300px 1fr !important; /* 基本構成を絶対維持 */
+        }
+
+        /* スキルエリアと愛用品エリアを一つの共通な柔軟グリッド(Flexbox)として融合 */
+        .skills-section, .items-section {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 12px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            background: none !important;
+            box-shadow: none !important;
+        }
+
+        /* スキルエリアと愛用品エリアのコンテナを横並びに配置 */
+        .skills-section {
+            grid-column: 3 / 4 !important;
+            width: 100% !important;
+        }
+        .items-section {
+            display: none !important; /* 個別のグリッド配置を解除し、skills-section内に統合します */
+        }
+
+        /* 内部のスキルブロック・愛用品ブロックすべてを完全に同一条件で均等に伸縮させる */
+        .skills-section .skill-block {
+            flex: 1 1 0% !important; /* すべて等しい比率で幅を自動調整 */
+            min-width: 0 !important;
+            margin: 0 !important;   /* 外幅の干渉をリセット */
+            height: 100% !important;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -121,14 +245,18 @@ function resetPageAndTrigger() {
     filterStudentsTrigger();
 }
 
-// ============================================================================
-// 2. ドロップダウンUI・表示制御
-// ============================================================================
 function toggleDropdown(id) {
     const el = document.getElementById(id);
     if (!el) return;
+
     const isOpen = el.classList.contains('open');
-    document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('open'));
+
+    // 他のすべてのドロップダウン（共通クラス、および新しいスキルタグ専用クラス）を一旦すべて閉じます
+    document.querySelectorAll('.custom-dropdown, .skill-tag-dropdown').forEach(d => {
+        d.classList.remove('open');
+    });
+
+    // クリックされたドロップダウンが閉じていた場合は、open クラスを付与して展開します
     if (!isOpen) {
         el.classList.add('open');
     }
@@ -139,144 +267,153 @@ function parseTagsString(tagsStr) {
     return tagsStr.split(',').map(t => t.trim()).filter(t => t !== '');
 }
 
-function updateDropdownText(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const btn = el.querySelector('.dropdown-button');
-    if (!btn) return;
+function updateDropdownText(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
 
-    const existingClearBtn = btn.querySelector('.dropdown-clear-btn');
-    if (existingClearBtn) existingClearBtn.remove();
+    const button = dropdown.querySelector('.dropdown-button');
+    if (!button) return;
 
-    const checkedVals = getCheckedValues(id);
-    if (checkedVals.length === 0) {
-        btn.textContent = "選択してください";
-    } else if (checkedVals.length === 1) {
-        btn.textContent = checkedVals[0];
+    const selectedValues = badgeSelectedFilters[dropdownId] || [];
+
+    if (selectedValues.length === 0) {
+        button.textContent = (dropdownId === 'dropExTags' || dropdownId === 'dropTags') ? '選択してください' : '選択してください';
+        button.classList.remove('has-values');
     } else {
-        btn.textContent = `${checkedVals[0]} +他${checkedVals.length - 1}件`;
-    }
+        let label = '選択中';
+        if (dropdownId === 'dropSchool') label = '学校';
+        else if (dropdownId === 'dropWeapon') label = '武器';
+        else if (dropdownId === 'dropAttack') label = '攻撃';
+        else if (dropdownId === 'dropDefense') label = '防御';
+        else if (dropdownId === 'dropPosition') label = '配置';
+        else if (dropdownId === 'dropRole') label = '役割';
+        else if (dropdownId === 'dropSquadType') label = '戦区';
+        else if (dropdownId === 'dropGear') label = '装備';
+        else if (dropdownId === 'dropTags') label = 'スキルタグ';
 
-    if (checkedVals.length > 0) {
-        const clearBtn = document.createElement('span');
-        clearBtn.className = 'dropdown-clear-btn';
-        clearBtn.innerHTML = '&times;';
-        clearBtn.style.marginLeft = 'auto';
-        clearBtn.style.padding = '0 4px';
-        clearBtn.style.cursor = 'pointer';
-        clearBtn.style.fontWeight = 'bold';
-        clearBtn.style.fontSize = '14px';
-        clearBtn.style.color = 'var(--ba-pink)';
-        clearBtn.style.display = 'inline-block';
-        
-        clearBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            el.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-            updateDropdownText(id);
-        });
-        
-        btn.style.display = 'flex';
-        btn.style.justifyContent = 'space-between';
-        btn.style.alignItems = 'center';
-        btn.appendChild(clearBtn);
+        button.textContent = `${label} (${selectedValues.length})`;
+        button.classList.add('has-values');
     }
-
-    currentPage = 1;
-    filterStudentsTrigger();
 }
 
 function getCheckedValues(id) {
     const el = document.getElementById(id);
     if (!el) return [];
-    const checkboxes = el.querySelectorAll('.dropdown-content input[type="checkbox"]:checked');
+    
+    // 🌟 画面上のバッジの残骸やHTMLの隙間の文字に惑わされないよう、
+    // 現在ドロップダウン内で青く光っている（.selected がついている）div要素のみから値を抽出します。
+    // これにより、クリアボタンを押してselectedが外れた瞬間に一発で「選択してください」に戻ります。
+    const selectedOptions = el.querySelectorAll('.dropdown-content .dropdown-option.selected, .skill-tag-content .dropdown-option.selected');
+    if (selectedOptions.length > 0) {
+        return Array.from(selectedOptions).map(opt => {
+            return opt.getAttribute('data-value') || opt.textContent.trim();
+        });
+    }
+    
+    // チェックボックス形式が残っていた場合のための互換性維持
+    const checkboxes = el.querySelectorAll('.dropdown-content input[type="checkbox"]:checked, .skill-tag-content input[type="checkbox"]:checked');
     return Array.from(checkboxes).map(cb => cb.value);
 }
 
 // ============================================================================
-// 3. 動的ドロップダウン生成
+// 【修正】ドロップダウン動的構築（遮蔽のリスト表示を統一）
 // ============================================================================
 function buildDynamicDropdowns(students) {
+    const schoolsSet = new Set();
+    const urbanSet = new Set();
+    const outdoorSet = new Set();
+    const indoorSet = new Set();
     const costSet = new Set();
-    const tagSet = new Set();
 
     students.forEach(s => {
-        if (s.ex_cost !== undefined && s.ex_cost !== null && s.ex_cost !== "") {
-            costSet.add(Number(s.ex_cost));
+        if (s.school && String(s.school).trim() !== '') schoolsSet.add(String(s.school).trim());
+        if (s.urban && String(s.urban).trim() !== '') urbanSet.add(String(s.urban).trim());
+        if (s.outdoor && String(s.outdoor).trim() !== '') outdoorSet.add(String(s.outdoor).trim());
+        if (s.indoor && String(s.indoor).trim() !== '') indoorSet.add(String(s.indoor).trim());
+        if (s.ex_cost !== undefined && s.ex_cost !== null) {
+            const rawCost = String(s.ex_cost).trim();
+            if (rawCost !== '' && rawCost !== '-') {
+                costSet.add(rawCost); 
+            }
         }
-        parseTagsString(s.ex_tags).forEach(t => tagSet.add(t));
-        parseTagsString(s.ns_tags).forEach(t => tagSet.add(t));
-        parseTagsString(s.ps_tags).forEach(t => tagSet.add(t));
-        parseTagsString(s.ss_tags).forEach(t => tagSet.add(t));
+    });
+
+    const stringNaturalSort = (array) => {
+        return array.sort((a, b) => {
+            return a.localeCompare(b, 'ja', { numeric: true, sensitivity: 'base' });
+        });
+    };
+
+    const schoolsArray = stringNaturalSort(Array.from(schoolsSet));
+    const urbanArray = stringNaturalSort(Array.from(urbanSet));
+    const outdoorArray = stringNaturalSort(Array.from(outdoorSet));
+    const indoorArray = stringNaturalSort(Array.from(indoorSet));
+    const costArray = stringNaturalSort(Array.from(costSet));
+
+    const configs = [
+        { id: 'dropSchool', data: schoolsArray },
+        { id: 'dropUrban', data: urbanArray },
+        { id: 'dropOutdoor', data: outdoorArray },
+        { id: 'dropIndoor', data: indoorArray },
+        { id: 'dropExCost', data: costArray }
+    ];
+
+    configs.forEach(config => {
+        const dropdown = document.getElementById(config.id);
+        if (!dropdown) return;
+        const content = dropdown.querySelector('.dropdown-content');
+        if (!content) return;
+        content.innerHTML = '';
+        config.data.forEach(val => {
+            const div = document.createElement('div');
+            div.className = 'dropdown-option';
+            div.textContent = val; 
+            div.setAttribute('onclick', `toggleOptionSelect(this, '${config.id}')`);
+            content.appendChild(div);
+        });
     });
 
     const costContent = document.getElementById('dropExCostContent');
     if (costContent) {
         costContent.innerHTML = '';
-        Array.from(costSet).sort((a, b) => a - b).forEach(c => {
-            costContent.innerHTML += `
-                <div class="dropdown-option">
-                    <input type="checkbox" value="${c}" onchange="updateDropdownText('dropExCost')"> コスト ${c}
-                </div>`;
+        costArray.forEach(val => {
+            const div = document.createElement('div');
+            div.className = 'dropdown-option';
+            div.textContent = `COST ${val}`;
+            div.setAttribute('data-value', val);
+            div.setAttribute('onclick', `toggleOptionSelect(this, 'dropExCost')`);
+            costContent.appendChild(div);
         });
     }
 
-    const tagContent = document.getElementById('dropTagsContent');
-    if (tagContent) {
-        tagContent.innerHTML = '';
-        const isPlana = document.documentElement.getAttribute('data-theme') === 'plana';
-        
-        const searchWrapper = document.createElement('div');
-        searchWrapper.style.position = 'sticky';
-        searchWrapper.style.top = '0';
-        searchWrapper.style.background = isPlana ? '#222232' : '#ffffff';
-        searchWrapper.style.padding = '6px 8px';
-        searchWrapper.style.borderBottom = isPlana ? '1px solid rgba(163, 161, 247, 0.25)' : '1px solid rgba(0, 178, 255, 0.2)';
-        searchWrapper.style.zIndex = '10';
-        
-        const tagSearchInput = document.createElement('input');
-        tagSearchInput.type = 'text';
-        tagSearchInput.id = 'tagDropdownSearch';
-        tagSearchInput.placeholder = 'タグを検索...';
-        tagSearchInput.style.width = '100%';
-        tagSearchInput.style.padding = '4px 8px';
-        tagSearchInput.style.fontSize = '12px';
-        tagSearchInput.style.border = isPlana ? '1px solid rgba(163, 161, 247, 0.4)' : '1px solid rgba(0, 178, 255, 0.4)';
-        tagSearchInput.style.borderRadius = '4px';
-        tagSearchInput.style.background = isPlana ? '#1e1e2a' : 'rgba(255, 255, 255, 0.9)';
-        tagSearchInput.style.color = 'var(--text-main)';
-        tagSearchInput.style.outline = 'none';
-        tagSearchInput.style.boxSizing = 'border-box';
-        
-        tagSearchInput.addEventListener('click', (e) => e.stopPropagation());
-        
-        tagSearchInput.addEventListener('input', function(e) {
-            const query = e.target.value.trim().toUpperCase();
-            const options = tagContent.querySelectorAll('.dropdown-option');
-            options.forEach(opt => {
-                const text = opt.textContent || opt.innerText;
-                if (text.toUpperCase().indexOf(query) > -1) {
-                    opt.style.display = 'block';
-                } else {
-                    opt.style.display = 'none';
-                }
-            });
-        });
+    // 🌟【重要】遮蔽のドロップダウン（dropCover）の選択肢を「〇:利用する」「×:利用しない」に完全に固定
+    const coverDropdown = document.getElementById('dropCover');
+    if (coverDropdown) {
+        const coverContent = coverDropdown.querySelector('.dropdown-content') || document.getElementById('dropCoverContent');
+        if (coverContent) {
+            coverContent.innerHTML = ''; // 一旦初期化
+            
+            // 「〇:利用する」の選択肢（内部データ値としては "○" または "〇" の両方に対応させます）
+            const optYes = document.createElement('div');
+            optYes.className = 'dropdown-option';
+            optYes.textContent = '〇:利用する';
+            optYes.setAttribute('data-value', '○'); // データ側の「○」と一致させる
+            optYes.setAttribute('onclick', "toggleOptionSelect(this, 'dropCover')");
+            coverContent.appendChild(optYes);
 
-        searchWrapper.appendChild(tagSearchInput);
-        tagContent.appendChild(searchWrapper);
-
-        Array.from(tagSet).sort().forEach(t => {
-            if (!t) return;
-            const optRow = document.createElement('div');
-            optRow.className = 'dropdown-option';
-            optRow.innerHTML = `<input type="checkbox" value="${t}" onchange="updateDropdownText('dropTags')"> ${t}`;
-            tagContent.appendChild(optRow);
-        });
+            // 「×:利用しない」の選択肢
+            const optNo = document.createElement('div');
+            optNo.className = 'dropdown-option';
+            optNo.textContent = '×:利用しない';
+            optNo.setAttribute('data-value', '×');  // データ側の「×」と一致させる
+            optNo.setAttribute('onclick', "toggleOptionSelect(this, 'dropCover')");
+            coverContent.appendChild(optNo);
+        }
     }
 }
 
 // ============================================================================
-// 4. リストレンダリングコア ＆ ページ送り連動
+// 4. リストレンダリングコア ＆ ページ送り連動（全項目ハイライト対応版）
 // ============================================================================
 function renderStudentsList(students) {
     const container = document.getElementById('studentContainer');
@@ -305,12 +442,36 @@ function renderStudentsList(students) {
         displayStudents = students.slice(startIndex, endIndex);
 
         setupPagination(students.length, limitValue, totalPages);
+    
+    }else{
+        const totalPages = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+        const startIndex = (currentPage - 1) * limitValue;
+        const endIndex = startIndex + limitValue;
+        displayStudents = students.slice(startIndex, endIndex);
+        setupPagination(students.length, 1, totalPages);
     }
 
     const searchInput = document.getElementById("liveSearch");
     const freeKeyword = searchInput ? searchInput.value.trim() : "";
     const selGear = getCheckedValues('dropGear');
     const selTags = getCheckedValues('dropTags');
+    
+    // 🌟 フリーワード以外の選択状態を取得（ハイライト表示用）
+    const selSchool = getCheckedValues('dropSchool');
+    const selType = getCheckedValues('dropType');
+    const selWeapon = getCheckedValues('dropWeapon');
+    // 🌟 遮蔽ドロップダウンの選択肢（"〇:利用する" など）から「〇」や「×」の記号部分だけを抽出して判定用に使う
+    const selCover = getCheckedValues('dropCover').map(v => v.split(':')[0].trim());
+    const selRole = getCheckedValues('dropRole');
+    const selPos = getCheckedValues('dropPos');
+    const selAttack = getCheckedValues('dropAttack');
+    const selDefense = getCheckedValues('dropDefense');
+    const selExCost = getCheckedValues('dropExCost');
+    const selUrban = getCheckedValues('dropUrban');
+    const selOutdoor = getCheckedValues('dropOutdoor');
+    const selIndoor = getCheckedValues('dropIndoor');
 
     function escapeHtml(str) {
         if (!str) return "";
@@ -334,6 +495,48 @@ function renderStudentsList(students) {
         }
     }
 
+    // 🌟 各種フィルター項目用のハイライト関数
+    function highlightFilterField(text, selectedList) {
+        if (!text || text === "-") return "-";
+        const escaped = escapeHtml(text);
+        
+        let matchFree = false;
+        if (freeKeyword && escaped.toLowerCase().includes(freeKeyword.toLowerCase())) {
+            matchFree = true;
+        }
+        
+        let matchDropdown = false;
+        if (selectedList && selectedList.length > 0) {
+            matchDropdown = selectedList.some(val => escaped.toLowerCase() === val.toLowerCase());
+        }
+        
+        if (matchFree || matchDropdown) {
+            return `<mark class="search-highlight">${escaped}</mark>`;
+        }
+        return escaped;
+    }
+// 🌟 遮蔽用の部分一致ハイライト関数（「〇」や「×」を正しく黄色く光らせる）
+    function highlightCoverField(text, selectedList) {
+        if (!text || text === "-") return "-";
+        const escaped = escapeHtml(text);
+        
+        let matchFree = false;
+        if (freeKeyword && escaped.toLowerCase().includes(freeKeyword.toLowerCase())) {
+            matchFree = true;
+        }
+        
+        // 選択されたリスト（"○" や "×"）の中に、生徒側の文字が含まれているか判定
+        let matchDropdown = false;
+        if (selectedList && selectedList.length > 0) {
+            matchDropdown = selectedList.some(val => val.includes(escaped) || escaped.includes(val));
+        }
+        
+        if (matchFree || matchDropdown) {
+            return `<mark class="search-highlight">${escaped}</mark>`;
+        }
+        return escaped;
+    }
+    
     function highlightNumbersInDesc(text) {
         if (!text) return "-";
         let html = highlightText(text);
@@ -406,8 +609,8 @@ function renderStudentsList(students) {
         let nsAddHTML = "";
         if (s.ns_add && s.ns_add !== "-" && s.ns_add !== "" && (!Array.isArray(s.ns_add) || s.ns_add.length > 0)) {
             let nsAddText = Array.isArray(s.ns_add) ? s.ns_add.join(', ') : s.ns_add;
-            let processedText = highlightText(nsAddText).replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
-            nsAddHTML = `<br><span style="color:#48BB78; font-size:11px; font-weight:700; display:block; line-height:1.4;">${processedText}</span>`;
+            let processedText = highlightNumbersInDesc(nsAddText).replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            nsAddHTML = `<br><span class="skill-type type-ns" style="margin-bottom: 4px; display: inline-block;">NORMAL SKILL+</span><span style="color:#48BB78; font-size:11px; font-weight:700; display:block; line-height:1.4;">${processedText}</span>`;
         }
 
         let psUnique2HTML = "";
@@ -415,30 +618,34 @@ function renderStudentsList(students) {
             psUnique2HTML = `<br><span style="color:#48BB78; font-size:11px; font-weight:700;">[固有2] ${highlightNumbersInDesc(s.ps_unique2)}</span>`;
         }
 
-        // 現在お気に入り登録されているか判定
         const isFav = favoriteStudents.includes(s.name);
         const pinClass = isFav ? 'is-fav' : 'not-fav';
-        // 【修正】星マークからプッシュピン(📌)へアイコンを変更
         const pinIcon = '📌';
+
+        const cvText = s.cv ? `CV: ${highlightText(s.cv)}` : "CV: -";
+
+        const hasItem = s.item_name && s.item_name !== "なし" && s.item_name !== "-";
+        const displayItemName = hasItem ? highlightText(s.item_name) : "なし";
 
         row.innerHTML = `
             <div class="favorite-star-btn ${pinClass}" onclick="toggleFavoriteStudent(event, '${s.name.replace(/'/g, "\\'")}')">${pinIcon}</div>
 
-            <div class="name-section">
-                <div class="student-name" style="padding-left: 20px;">${highlightText(s.name)}</div>
-                <div class="student-school">
-                    <span class="clickable-filter-text" onclick="clickFilterBind('dropSchool', '${s.school}')">${highlightText(s.school)}</span> / 
-                    <span class="clickable-filter-text" onclick="clickFilterBind('dropType', '${s.type}')">${highlightText(s.type)}</span>
+            <div class="name-section" style="text-align: center; padding: 0 10px;">
+                <div class="student-name" style="padding-left: 0;">${highlightText(s.name)}</div>
+                <div class="student-cv" style="padding-left: 0;">${cvText}</div>
+                <div class="student-school" style="padding-left: 0;">
+                    <span class="clickable-filter-text" onclick="clickFilterBind('dropSchool', '${s.school}')">${highlightFilterField(s.school, selSchool)}</span> / 
+                    <span class="clickable-filter-text" onclick="clickFilterBind('dropType', '${s.type}')">${highlightFilterField(s.type, selType)}</span>
                 </div>
             </div>
             
             <div class="stats-section" style="display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-flow: row; gap: 6px 8px;">
-                <div class="stat-badge">役割: <span class="clickable-val" onclick="clickFilterBind('dropRole', '${s.role}')">${highlightText(s.role)}</span></div>
-                <div class="stat-badge">位置: <span class="clickable-val" onclick="clickFilterBind('dropPos', '${s.position}')">${highlightText(s.position)}</span></div>
-                <div class="stat-badge">攻撃: <span class="type-badge-style ${atkClass}" onclick="clickFilterBind('dropAttack', '${s.attack}')">${highlightText(s.attack)}</span></div>
-                <div class="stat-badge">防御: <span class="type-badge-style ${defClass}" onclick="clickFilterBind('dropDefense', '${s.defense}')">${highlightText(s.defense)}</span></div>
-                <div class="stat-badge">武器/遮蔽: <span><span class="clickable-val" onclick="clickFilterBind('dropWeapon', '${s.weapon}')">${highlightText(s.weapon)}</span> / <span class="clickable-val" onclick="clickFilterBind('dropCover', '${s.cover}')">${highlightText(s.cover)}</span></span></div>
-                <div class="stat-badge">適正(市/外/内): <span><span class="clickable-val" onclick="clickFilterBind('dropUrban', '${s.urban}')">${highlightText(s.urban)}</span>/<span class="clickable-val" onclick="clickFilterBind('dropOutdoor', '${s.outdoor}')">${highlightText(s.outdoor)}</span>/<span class="clickable-val" onclick="clickFilterBind('dropIndoor', '${s.indoor}')">${highlightText(s.indoor)}</span></span></div>
+                <div class="stat-badge">役割: <span class="clickable-val" onclick="clickFilterBind('dropRole', '${s.role}')">${highlightFilterField(s.role, selRole)}</span></div>
+                <div class="stat-badge">位置: <span class="clickable-val" onclick="clickFilterBind('dropPos', '${s.position}')">${highlightFilterField(s.position, selPos)}</span></div>
+                <div class="stat-badge">攻撃: <span class="type-badge-style ${atkClass}" onclick="clickFilterBind('dropAttack', '${s.attack}')">${highlightFilterField(s.attack, selAttack)}</span></div>
+                <div class="stat-badge">防御: <span class="type-badge-style ${defClass}" onclick="clickFilterBind('dropDefense', '${s.defense}')">${highlightFilterField(s.defense, selDefense)}</span></div>
+                <div class="stat-badge">武器/遮蔽: <span><span class="clickable-val" onclick="clickFilterBind('dropWeapon', '${s.weapon}')">${highlightFilterField(s.weapon, selWeapon)}</span> / <span class="clickable-val" onclick="clickFilterBind('dropCover', '${s.cover}')">${highlightCoverField(s.cover, selCover)}</span></span></div>
+                <div class="stat-badge">市/外/内: <span><span class="clickable-val" onclick="clickFilterBind('dropUrban', '${s.urban}')">${highlightFilterField(s.urban, selUrban)}</span> / <span class="clickable-val" onclick="clickFilterBind('dropOutdoor', '${s.outdoor}')">${highlightFilterField(s.outdoor, selOutdoor)}</span> / <span class="clickable-val" onclick="clickFilterBind('dropIndoor', '${s.indoor}')">${highlightFilterField(s.indoor, selIndoor)}</span></span></div>
                 <div class="stat-badge">装備1: <span class="clickable-gear" onclick="clickFilterBind('dropGear', '${gear1Text}')">${highlightGear(gear1Text)}</span></div>
                 <div class="stat-badge">装備2: <span class="clickable-gear" onclick="clickFilterBind('dropGear', '${gear2Text}')">${highlightGear(gear2Text)}</span></div>
                 <div class="stat-badge">装備3: <span class="clickable-gear" onclick="clickFilterBind('dropGear', '${gear3Text}')">${highlightGear(gear3Text)}</span></div>
@@ -449,7 +656,7 @@ function renderStudentsList(students) {
                 <div class="skill-block">
                     <div class="skill-header">
                         <span class="skill-type type-ex">EX SKILL</span>
-                        <span class="skill-cost" onclick="clickFilterBind('dropExCost', '${s.ex_cost}')">COST ${highlightText(s.ex_cost)}</span>
+                        <span class="skill-cost" onclick="clickFilterBind('dropExCost', '${s.ex_cost}')">COST ${highlightFilterField(s.ex_cost, selExCost)}</span>
                     </div>
                     <div class="skill-title">${highlightText(s.ex_name)}</div>
                     <div class="skill-desc">${highlightNumbersInDesc(s.ex_desc)}</div>
@@ -476,14 +683,21 @@ function renderStudentsList(students) {
                     <div class="skill-desc">${highlightNumbersInDesc(s.ss_desc)}</div>
                     <div class="skill-tags">${ssTagsHTML}</div>
                 </div>
+                
+                <div class="skill-block custom-gear-block">
+                    <div class="skill-header">
+                        <span class="skill-type" style="background-color: var(--ba-blue, #00B2FF) !important; color: #fff !important;">愛用品</span>
+                    </div>
+                    <div class="skill-title">${displayItemName}</div>
+                    <div class="skill-desc" style="font-size: 11px; line-height: 1.5; padding-top: 4px;">
+                        <div style="margin-bottom: 4px;"><strong style="color: var(--ba-pink);">✦ T1: ${highlightText(s.gearStats || "")}</strong></div>
+                        <div style="margin-bottom: 4px;"><strong style="color: #48BB78;">✦ 贈り物: ${highlightText(s.gift_name || "")}</strong></div>
+                        <div style="margin-bottom: 0;"><strong style="color: #48BB78;">✦ オーパーツ: ${highlightText(s.artifacts || "")}</strong></div>
+                    </div>
+                </div>
             </div>
-            <div class="items-section" style="font-size: 6px; line-height: 0.9;">
-                <div class="item-row" style="margin-bottom: 3px;"><span class="item-label">愛用品</span><span class="item-value" style="font-size: 9px;">${highlightText(s.item_name || "なし")}</span></div>
-                <div class="item-row" style="margin-bottom: 3px;"><span class="item-label">上昇ステータス</span><span class="item-value" style="font-size: 9px;">${highlightText(s.gearStats || "なし")}</span></div>
-                <div class="item-row" style="margin-bottom: 3px;"><span class="item-label">強化効果</span><span class="item-value" style="font-size: 9px;">${highlightText(s.gearEnhancement || "なし")}</span></div>
-                <div class="item-row" style="margin-bottom: 3px;"><span class="item-label">贈り物</span><span class="item-value" style="font-size: 9px;">${highlightText(s.gift_name || "なし")}</span></div>
-                <div class="item-row" style="margin-bottom: 0;"><span class="item-label">オーパーツ</span><span class="item-value" style="font-size: 9px;">${highlightText(s.artifacts || "なし")}</span></div>
-            </div>
+
+            <div class="items-section"></div>
         `;
         container.appendChild(row);
     });
@@ -564,7 +778,6 @@ function filterStudentsTrigger() {
     const searchInput = document.getElementById("liveSearch");
     const freeText = searchInput ? searchInput.value.trim().toUpperCase() : "";
 
-    // お気に入りボタンの状態を判定
     const favBtn = document.getElementById('favFilterBtn');
     const isFavOnly = favBtn ? favBtn.classList.contains('is-fav') : false;
 
@@ -584,7 +797,6 @@ function filterStudentsTrigger() {
     const selTags = getCheckedValues('dropTags');
 
     const filtered = cachedStudents.filter(s => {
-        // お気に入りフィルターの判定
         if (isFavOnly && !favoriteStudents.includes(s.name)) {
             return false;
         }
@@ -592,10 +804,10 @@ function filterStudentsTrigger() {
         let matchFreeText = true;
         if (freeText) {
             const pool = [
-                s.name, s.school, s.type, s.weapon, s.cover, s.role, s.position, s.attack, s.defense,
+                s.name, s.cv, s.school, s.type, s.weapon, s.cover, s.role, s.position, s.attack, s.defense,
                 s.ex_name, s.ex_desc, s.ns_name, s.ns_desc, s.ps_name, s.ps_desc, s.ss_name, s.ss_desc,
                 s.urban, s.outdoor, s.indoor, s.gear1, s.gear2, s.gear3, s.item_name, s.gift_name,
-                s.ex_tags, s.ns_tags, s.ps_tags, s.ss_tags, s.gearStats, s.gearEnhancement, s.artifacts
+                s.ex_tags, s.ns_tags, s.ps_tags, s.ss_tags, s.gearStats, s.artifacts
             ].join('||').toUpperCase();
             matchFreeText = pool.indexOf(freeText) > -1;
         }
@@ -638,67 +850,76 @@ function filterStudentsTrigger() {
     renderStudentsList(filtered);
 }
 
+// ============================================================================
+// 【修正確定版】一覧クリック時に検索条件を追加し、バッジを生成する関数
+// ============================================================================
 function clickFilterBind(dropdownId, value) {
+    if (!dropdownId || !value) return;
+
     const el = document.getElementById(dropdownId);
     if (!el) return;
 
-    let targetCheckbox = null;
-    el.querySelectorAll('.dropdown-content input[type="checkbox"]').forEach(cb => {
-        if (cb.value.toUpperCase() === value.toUpperCase()) {
-            targetCheckbox = cb;
+    // ドロップダウン内のオプション要素（div）を探す
+    const options = el.querySelectorAll('.dropdown-option');
+    let targetOpt = null;
+
+    options.forEach(opt => {
+        const optText = opt.textContent.trim().toUpperCase();
+        const optVal = (opt.getAttribute('data-value') || '').trim().toUpperCase();
+        const searchVal = String(value).trim().toUpperCase();
+
+        // 🌟 遮蔽の場合（例: 表示が "〇:利用する"、クリックされたのが "○" の時に前方一致やdata-valueで紐付け）
+        if (dropdownId === 'dropCover') {
+            if (optText.startsWith(searchVal) || optVal === searchVal) {
+                targetOpt = opt;
+            }
         } else {
-            cb.checked = false; 
+            // 通常の項目の完全一致判定
+            if (optText === searchVal || optVal === searchVal) {
+                targetOpt = opt;
+            }
         }
     });
 
-    if (targetCheckbox) {
-        targetCheckbox.checked = !targetCheckbox.checked;
+    if (targetOpt) {
+        // システムの共通トグル関数を呼び出し、選択クラスの付与、バッジ生成、検索連動をすべて1発で同期
+        toggleOptionSelect(targetOpt, dropdownId);
     }
-    
-    updateDropdownText(dropdownId);
 }
 
 function clearAllFilters() {
-    const searchInput = document.getElementById('liveSearch');
-    if (searchInput) searchInput.value = '';
+    // 1. 全てのフィルターデータを初期化
+    badgeSelectedFilters = {
+        dropSchool: [], dropType: [], dropWeapon: [], dropCover: [], dropRole: [], 
+        dropPos: [], dropAttack: [], dropDefense: [], dropExCost: [], dropUrban: [], 
+        dropOutdoor: [], dropIndoor: [], dropGear: [], dropTags: []
+    };
 
-    const tagSearchInput = document.getElementById('tagDropdownSearch');
-    if (tagSearchInput) tagSearchInput.value = '';
-
-    // 【修正】HTML側で最初に selected が指定されている option の値を自動取得して戻す
-    const limitSelect = document.getElementById('displayLimitSelect');
-    if (limitSelect) {
-        const defaultOption = limitSelect.querySelector('option[selected]');
-        const defaultValue = defaultOption ? defaultOption.value : limitSelect.options[0].value;
-        limitSelect.value = defaultValue; 
-        localStorage.setItem('db_display_limit', defaultValue); // ローカルストレージ初期値同期
-    }
-
-    // 【修正】お気に入りフィルターの解除（📌表記に合わせる）
+    // 2. ドロップダウン内の .selected クラスをすべて解除し、チェックボックスも外す
+    document.querySelectorAll('.custom-dropdown, .skill-tag-dropdown').forEach(el => {
+        el.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+        el.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        
+        // 🌟 内部のバッジ表示とボタンのテキスト表示を一発でリセット
+        updateBadgeDropdownUI(el.id);
+    });
+    
+    // お気に入りボタンのリセット
     const favBtn = document.getElementById('favFilterBtn');
     if (favBtn) {
         favBtn.classList.remove('is-fav');
         favBtn.classList.add('not-fav');
-        favBtn.innerHTML = '📌 ';
-    }
-
-    currentPage = 1;
-
-    document.querySelectorAll('.custom-dropdown').forEach(el => {
-        el.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        el.querySelectorAll('.dropdown-option').forEach(opt => opt.style.display = 'block');
-        const btn = el.querySelector('.dropdown-button');
-        if (btn) {
-            const existingClearBtn = btn.querySelector('.dropdown-clear-btn');
-            if (existingClearBtn) existingClearBtn.remove();
-            btn.textContent = "選択してください";
-            btn.style.display = '';
-            btn.style.justifyContent = '';
-            btn.style.alignItems = '';
+        const star = favBtn.querySelector('i');
+        if (star) {
+            star.className = 'fa-regular fa-star';
         }
-    });
+    }
+    showFavoritesOnly = false;
 
-    filterStudentsTrigger();
+    const searchInput = document.getElementById('studentSearchInput');
+    if (searchInput) searchInput.value = '';
+
+    resetPageAndTrigger();
 }
 
 document.addEventListener('click', function(e) {
@@ -743,18 +964,15 @@ function toggleFilterGrid() {
     }
 }
 
-// 【修正】お気に入りフィルターボタンをクリックした時の処理（📌仕様）
 function toggleFavFilter() {
     const favBtn = document.getElementById('favFilterBtn');
     if (!favBtn) return;
     
     if (favBtn.classList.contains('is-fav')) {
-        // 【OFF（通常状態）にする処理】
         favBtn.classList.remove('is-fav');
         favBtn.classList.add('not-fav');
         favBtn.innerHTML = '📌 ';
     } else {
-        // 【ON（アクティブ状態）にする処理】
         favBtn.classList.remove('not-fav');
         favBtn.classList.add('is-fav');
         favBtn.innerHTML = '📌 ';
@@ -764,34 +982,45 @@ function toggleFavFilter() {
     filterStudentsTrigger();
 }
 
-// カードの左上のピンマークをクリックした時の処理
 function toggleFavoriteStudent(event, studentName) {
-    event.stopPropagation(); // 他のクリックイベントへの伝播を防ぐ
+    event.stopPropagation();
 
     const idx = favoriteStudents.indexOf(studentName);
     if (idx > -1) {
-        favoriteStudents.splice(idx, 1); // 登録解除
+        favoriteStudents.splice(idx, 1);
     } else {
-        favoriteStudents.push(studentName); // 登録
+        favoriteStudents.push(studentName);
     }
 
-    // ローカルストレージに状態を即時保存
     localStorage.setItem('db_favorites', JSON.stringify(favoriteStudents));
-
-    // お気に入りフィルタリングが有効、かつ解除した場合はカードが消える可能性があるため再描画
-    const favBtn = document.getElementById('favFilterBtn');
-    const isFavOnly = favBtn ? favBtn.classList.contains('is-fav') : false;
-    if (isFavOnly) {
-        filterStudentsTrigger();
-    } else {
-        // 通常時は全リストを再描画してピンマークの表示状態を反転させる
-        renderStudentsList(cachedStudents);
-    }
+    filterStudentsTrigger();
 }
 
 function toggleSect(buttonElement, className) {
     const container = document.getElementById('studentContainer');
     if (!container) return;
+
+    // もし愛用品ボタン（classNameがhide-gear）が押された場合、統合したクラスである .custom-gear-block を直接非表示にするスタイルを追加
+    if (className === 'hide-gear') {
+        const isHidden = container.classList.toggle('hide-gear');
+        const styleId = 'dynamic-gear-hide-style';
+        let styleEl = document.getElementById(styleId);
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            document.head.appendChild(styleEl);
+        }
+        if (isHidden) {
+            styleEl.textContent = `.custom-gear-block { display: none !important; }`;
+            buttonElement.classList.remove('active');
+            localStorage.setItem('db_sect_hide-gear', 'hidden');
+        } else {
+            styleEl.textContent = '';
+            buttonElement.classList.add('active');
+            localStorage.setItem('db_sect_hide-gear', 'visible');
+        }
+        return;
+    }
 
     const isHidden = container.classList.toggle(className);
 
@@ -852,6 +1081,26 @@ function restoreAllStates() {
             const savedSect = localStorage.getItem(`db_sect_${className}`);
             const targetBtn = Array.from(buttons).find(btn => btn.getAttribute('onclick').includes(className));
             
+            if (className === 'hide-gear') {
+                const styleId = 'dynamic-gear-hide-style';
+                let styleEl = document.getElementById(styleId);
+                if (!styleEl) {
+                    styleEl = document.createElement('style');
+                    styleEl.id = styleId;
+                    document.head.appendChild(styleEl);
+                }
+                if (savedSect === 'hidden') {
+                    container.classList.add('hide-gear');
+                    styleEl.textContent = `.custom-gear-block { display: none !important; }`;
+                    if (targetBtn) targetBtn.classList.remove('active');
+                } else {
+                    container.classList.remove('hide-gear');
+                    styleEl.textContent = '';
+                    if (targetBtn) targetBtn.classList.add('active');
+                }
+                return;
+            }
+
             if (savedSect === 'hidden') {
                 container.classList.add(className);
                 if (targetBtn) targetBtn.classList.remove('active');
@@ -862,7 +1111,6 @@ function restoreAllStates() {
         });
     }
 
-    // 起動時にお気に入りフィルターボタンにデフォルトクラス(not-fav)を付与
     const favBtn = document.getElementById('favFilterBtn');
     if (favBtn && !favBtn.classList.contains('is-fav')) {
         favBtn.classList.add('not-fav');
@@ -898,5 +1146,650 @@ function clearLiveSearchInput() {
     currentPage = 1;
     filterStudentsTrigger();
 }
+
+// ============================================================================
+// 9. 【完全修正・決定版】バッジ形式・全検索プロパティ・ラベル位置完全補正ロジック
+// ============================================================================
+
+// 1. グローバルなフィルター保持オブジェクトを、HTML側の正確なID名（CamelCase）で定義
+let badgeSelectedFilters = {
+    dropSchool: [],
+    dropType: [],
+    dropWeapon: [],
+    dropCover: [],
+    dropRole: [],
+    dropPos: [],
+    dropAttack: [],
+    dropDefense: [],
+    dropExCost: [],
+    dropUrban: [],
+    dropOutdoor: [],
+    dropIndoor: [],
+    dropGear: [],
+    dropTags: []
+};
+
+// 2. オプション要素をクリックしたときのトグル処理
+function toggleOptionSelect(element, dropdownId) {
+    if (!badgeSelectedFilters.hasOwnProperty(dropdownId)) {
+        badgeSelectedFilters[dropdownId] = [];
+    }
+    const value = element.getAttribute('data-value') || element.textContent.trim();
+    let selectedArr = badgeSelectedFilters[dropdownId];
+
+    if (selectedArr.includes(value)) {
+        selectedArr = selectedArr.filter(v => v !== value);
+        element.classList.remove('selected');
+    } else {
+        selectedArr.push(value);
+        element.classList.add('selected');
+    }
+    badgeSelectedFilters[dropdownId] = selectedArr;
+    
+    // 🌟 画面上のバッジ描画、ボタンテキストを正しく更新します
+    updateBadgeDropdownUI(dropdownId);
+    
+    currentPage = 1;
+    filterStudentsTrigger();
+}
+
+function updateBadgeDropdownUI(id) {
+    const dropdown = document.getElementById(id);
+    if (!dropdown) return;
+
+    const button = dropdown.querySelector('.dropdown-button');
+    if (!button) return;
+
+    const selectedArr = badgeSelectedFilters[id] || [];
+
+    // コントロール内部を完全にクリア
+    button.innerHTML = '';
+
+    if (selectedArr.length === 0) {
+        button.textContent = '選択してください';
+        return;
+    }
+
+    // 選択された項目を、本物のバッジ（子要素）としてコントロール内部へストレートに追加
+    selectedArr.forEach(val => {
+        let displayVal = val;
+        
+        if (id === 'dropCover') {
+            if (val.includes('利用する') || val === '〇' || val === '○') {
+                displayVal = '〇：利用する';
+            } else if (val.includes('利用しない') || val === '×') {
+                displayVal = '×：利用しない';
+            }
+        }
+
+        const badge = document.createElement('span');
+        badge.className = 'selected-badge';
+        badge.innerHTML = `${displayVal} <i class="fa-solid fa-xmark"></i>`;
+        
+        // バッジが改行でバラバラに千切れないよう保護
+        badge.style.display = 'inline-flex';
+        badge.style.alignItems = 'center';
+        badge.style.whiteSpace = 'nowrap';
+
+        // 個別のバッジ削除イベント
+        badge.querySelector('i.fa-xmark').addEventListener('click', function(e) {
+            e.stopPropagation();
+            removeBadgeDirect(e, id, val);
+        });
+        
+        // アークナイツ版同様、コントロール（div）の内部に直接格納
+        button.appendChild(badge);
+    });
+
+    // 右端の一括クリアボタン（&times;）を生成してコントロール内に追加
+    const clearBtn = document.createElement('span');
+    clearBtn.className = 'dropdown-clear-btn';
+    clearBtn.innerHTML = '&times;';
+    
+    clearBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        clearSingleDropdownContainer(id);
+    });
+    
+    button.appendChild(clearBtn);
+}
+
+// 4. ピンクの×ボタンを押したときにそのドロップダウンだけを空にする処理
+function clearSingleDropdownContainer(dropdownId) {
+    badgeSelectedFilters[dropdownId] = [];
+    
+    const dropdown = document.getElementById(dropdownId);
+    if (dropdown) {
+        dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+    }
+
+    updateBadgeDropdownUI(dropdownId);
+    currentPage = 1;
+    filterStudentsTrigger();
+}
+
+// 5. バッジ内の小さな「×」マークをクリックした時の単一解除処理
+function removeBadgeDirect(event, dropdownId, value) {
+    event.stopPropagation();
+
+    let selectedArr = badgeSelectedFilters[dropdownId] || [];
+    selectedArr = selectedArr.filter(v => v !== value);
+    badgeSelectedFilters[dropdownId] = selectedArr;
+
+    const dropdown = document.getElementById(dropdownId);
+    if (dropdown) {
+        dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+            const optVal = opt.getAttribute('data-value') || opt.textContent.trim();
+            if (optVal === value) {
+                opt.classList.remove('selected');
+            }
+        });
+    }
+
+    updateBadgeDropdownUI(dropdownId);
+    currentPage = 1;
+    filterStudentsTrigger();
+}
+
+
+// 6. 全てクリアボタン（setClearAllFilters）のロジックを完全正常化
+setClearAllFilters = function() {
+    const liveSearch = document.getElementById('liveSearch');
+    if (liveSearch) liveSearch.value = "";
+    
+    const favBtn = document.getElementById('favFilterBtn');
+    if (favBtn) favBtn.classList.remove('is-fav');
+
+    // 定義されているすべての正確なIDキー（CamelCase）を確実に完全初期化
+    Object.keys(badgeSelectedFilters).forEach(key => {
+        badgeSelectedFilters[key] = [];
+        updateBadgeDropdownUI(key);
+    });
+    
+    document.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+    currentPage = 1;
+    filterStudentsTrigger();
+};
+// 2. メイン検索処理（タイポ変数を完全に消去し、絶対にエラーを吐かない安全構造）
+filterStudentsTrigger = function() {
+    const liveSearchVal = document.getElementById('liveSearch') ? document.getElementById('liveSearch').value.trim().toLowerCase() : "";
+    const isFavOnly = document.getElementById('favFilterBtn') ? document.getElementById('favFilterBtn').classList.contains('is-fav') : false;
+
+    let result = cachedStudents.filter(student => {
+        // 1. お気に入りフィルター
+        if (isFavOnly && !favoriteStudents.includes(student.name)) return false;
+
+        // 2. フリーワード検索（liveSearch）
+        if (liveSearchVal !== "") {
+            let matchText = false;
+            if (student.name && student.name.toLowerCase().includes(liveSearchVal)) matchText = true;
+            if (student.school && student.school.toLowerCase().includes(liveSearchVal)) matchText = true;
+            if (student.weapon && student.weapon.toLowerCase().includes(liveSearchVal)) matchText = true;
+            if (student.role && student.role.toLowerCase().includes(liveSearchVal)) matchText = true;
+            if (student.cv && student.cv.toLowerCase().includes(liveSearchVal)) matchText = true;
+            
+            const checkTxt = (n, d, t) => {
+                if (n && n.toLowerCase().includes(liveSearchVal)) matchText = true;
+                if (d && d.toLowerCase().includes(liveSearchVal)) matchText = true;
+                parseTagsString(t).forEach(tag => { if (tag && tag.toLowerCase().includes(liveSearchVal)) matchText = true; });
+            };
+            checkTxt(student.ex_name, student.ex_desc, student.ex_tags);
+            checkTxt(student.ns_name, student.ns_desc, student.ns_tags);
+            checkTxt(student.ps_name, student.ps_desc, student.ps_tags);
+            checkTxt(student.ss_name, student.ss_desc, student.ss_tags);
+
+            if (!matchText) return false;
+        }
+
+        // 3. 各ドロップダウンによる絞り込み（data.js のキー構造に準拠）
+        if (badgeSelectedFilters.dropSchool && badgeSelectedFilters.dropSchool.length > 0 && !badgeSelectedFilters.dropSchool.includes(student.school)) return false;
+        if (badgeSelectedFilters.dropType && badgeSelectedFilters.dropType.length > 0 && !badgeSelectedFilters.dropType.includes(student.type)) return false;
+        if (badgeSelectedFilters.dropRole && badgeSelectedFilters.dropRole.length > 0 && !badgeSelectedFilters.dropRole.includes(student.role)) return false;
+        if (badgeSelectedFilters.dropPos && badgeSelectedFilters.dropPos.length > 0 && !badgeSelectedFilters.dropPos.includes(student.position)) return false;
+        if (badgeSelectedFilters.dropWeapon && badgeSelectedFilters.dropWeapon.length > 0 && !badgeSelectedFilters.dropWeapon.includes(student.weapon)) return false;
+
+        // 遮蔽物
+        if (badgeSelectedFilters.dropCover && badgeSelectedFilters.dropCover.length > 0) {
+            let hasMatch = badgeSelectedFilters.dropCover.some(val => {
+                if ((val.includes("利用する") || val === "〇" || val === "○") && student.cover === "○") return true;
+                if ((val.includes("利用しない") || val === "×") && student.cover === "×") return true;
+                return false;
+            });
+            if (!hasMatch) return false;
+        }
+
+        if (badgeSelectedFilters.dropAttack && badgeSelectedFilters.dropAttack.length > 0 && !badgeSelectedFilters.dropAttack.includes(student.attack)) return false;
+        if (badgeSelectedFilters.dropDefense && badgeSelectedFilters.dropDefense.length > 0 && !badgeSelectedFilters.dropDefense.includes(student.defense)) return false;
+
+        // 地形適性
+        if (badgeSelectedFilters.dropUrban && badgeSelectedFilters.dropUrban.length > 0) {
+            let hasMatch = badgeSelectedFilters.dropUrban.some(val => student.urban === val.replace("市街地:", "").trim());
+            if (!hasMatch) return false;
+        }
+        if (badgeSelectedFilters.dropOutdoor && badgeSelectedFilters.dropOutdoor.length > 0) {
+            let hasMatch = badgeSelectedFilters.dropOutdoor.some(val => student.outdoor === val.replace("屋外:", "").trim());
+            if (!hasMatch) return false;
+        }
+        if (badgeSelectedFilters.dropIndoor && badgeSelectedFilters.dropIndoor.length > 0) {
+            let hasMatch = badgeSelectedFilters.dropIndoor.some(val => student.indoor === val.replace("屋内:", "").trim());
+            if (!hasMatch) return false;
+        }
+
+        // 装備品
+        if (badgeSelectedFilters.dropGear && badgeSelectedFilters.dropGear.length > 0) {
+            let gearMatch = badgeSelectedFilters.dropGear.some(g => 
+                student.gear1 === g || student.gear2 === g || student.gear3 === g
+            );
+            if (!gearMatch) return false;
+        }
+
+        // EXコスト（タイポ変数 hasCostMatch を完全に除去し、costMatch に修正）
+        if (badgeSelectedFilters.dropExCost && badgeSelectedFilters.dropExCost.length > 0) {
+            if (student.ex_cost === undefined || student.ex_cost === null || student.ex_cost === "") return false;
+            let costMatch = badgeSelectedFilters.dropExCost.some(val => String(student.ex_cost) === val.replace("コスト", "").trim());
+            if (!costMatch) return false;
+        }
+
+        // スキルタグ
+        if (badgeSelectedFilters.dropTags && badgeSelectedFilters.dropTags.length > 0) {
+            let studentTags = [
+                ...parseTagsString(student.ex_tags),
+                ...parseTagsString(student.ns_tags),
+                ...parseTagsString(student.ps_tags),
+                ...parseTagsString(student.ss_tags)
+            ];
+            let tagMatch = badgeSelectedFilters.dropTags.some(t => studentTags.includes(t));
+            if (!tagMatch) return false;
+        }
+
+        return true;
+    });
+
+    renderStudentsList(result);
+};
+
+// 全クリア連動フック
+const originalClearAllFilters = clearAllFilters;
+clearAllFilters = function() {
+    originalClearAllFilters();
+    Object.keys(badgeSelectedFilters).forEach(key => {
+        badgeSelectedFilters[key] = [];
+        updateBadgeDropdownUI(key);
+    });
+    document.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+    filterStudentsTrigger();
+};
+
+// ============================================================================
+// 【完全修正・決定版】5種ドロップダウン動的構築（EXコスト完全文字列処理版）
+// ============================================================================
+
+window.addEventListener('DOMContentLoaded', () => {
+    // 既存のパース処理(initDatabase)が走り、cachedStudentsにデータが入った直後に実行
+    setTimeout(() => {
+        if (typeof cachedStudents !== 'undefined' && cachedStudents.length > 0) {
+            // 1. 既存のスキルタグドロップダウンの構築と監視の起動
+            buildSkillTagDropdownContent(cachedStudents);
+            initSkillTagOutsideClickClose();
+            
+            // 2. 学校・市街地・屋外・屋内・EXコストドロップダウンをデータから動的構築
+            buildDynamicFiltersFromData(cachedStudents);
+        }
+    }, 150);
+});
+
+// 学校、市街地、屋外、屋内、EXコストのドロップダウンをデータから自動抽出して再構築する関数
+function buildDynamicFiltersFromData(students) {
+    const schoolsSet = new Set();
+    const urbanSet = new Set();
+    const outdoorSet = new Set();
+    const indoorSet = new Set();
+    const costSet = new Set();
+
+    // 全生徒データから各項目の値を重複なく抽出
+    students.forEach(s => {
+        if (s.school && String(s.school).trim() !== '') schoolsSet.add(String(s.school).trim());
+        if (s.urban && String(s.urban).trim() !== '') urbanSet.add(String(s.urban).trim());
+        if (s.outdoor && String(s.outdoor).trim() !== '') outdoorSet.add(String(s.outdoor).trim());
+        if (s.indoor && String(s.indoor).trim() !== '') indoorSet.add(String(s.indoor).trim());
+        
+        // 🌟EXコストの抽出：数値変換（Numberなど）は絶対にせず、100%純粋な「文字列」としてそのまま取得する
+        if (s.ex_cost !== undefined && s.ex_cost !== null) {
+            const rawCost = String(s.ex_cost).trim();
+            // 完全に中身が空のデータ（または未設定の「-」）のみを除外
+            if (rawCost !== '' && rawCost !== '-') {
+                costSet.add(rawCost);
+            }
+        }
+    });
+
+    // 🌟【文字列専用・自然順ソート関数】
+    // 数値変換を一切行わず、文字列のままで「2, 3, 4, 4～6, 4(2)」のように人間の感覚に沿って並び替える
+    const stringNaturalSort = (array) => {
+        return array.sort((a, b) => {
+            return a.localeCompare(b, 'ja', { numeric: true, sensitivity: 'base' });
+        });
+    };
+
+    // 各ドロップダウンIDと、抽出・ソートしたデータのマッピング
+    const filterConfigs = [
+        { id: 'dropSchool', data: stringNaturalSort(Array.from(schoolsSet)) },
+        { id: 'dropUrban', data: stringNaturalSort(Array.from(urbanSet)) },
+        { id: 'dropOutdoor', data: stringNaturalSort(Array.from(outdoorSet)) },
+        { id: 'dropIndoor', data: stringNaturalSort(Array.from(indoorSet)) },
+        { id: 'dropCost', data: stringNaturalSort(Array.from(costSet)) } // EXコストも完全に文字列としてソート
+    ];
+
+    filterConfigs.forEach(config => {
+        const dropdown = document.getElementById(config.id);
+        if (!dropdown) return;
+
+        const contentDiv = dropdown.querySelector('.dropdown-content');
+        if (!contentDiv) return;
+
+        // 既存の静的（固定）HTML選択肢を完全にクリア
+        contentDiv.innerHTML = '';
+
+        // 抽出した文字列データから、元々のHTMLと100%同じ構造・デザインの選択肢を動的に生成
+        config.data.forEach(val => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'dropdown-option';
+            optionDiv.textContent = val;
+            
+            // 元々のHTMLに記述されていた onclick="toggleOptionSelect(this, 'ドロップダウンID')" を完全再現
+            optionDiv.setAttribute('onclick', `toggleOptionSelect(this, '${config.id}')`);
+            
+            contentDiv.appendChild(optionDiv);
+        });
+    });
+}
+
+// スキルタグのドロップダウン外をクリックしたときにリストを閉じるグローバル関数
+function initSkillTagOutsideClickClose() {
+    document.addEventListener('click', (e) => {
+        const dropTags = document.getElementById('dropTags');
+        if (!dropTags) return;
+
+        if (!dropTags.contains(e.target) && dropTags.classList.contains('open')) {
+            if (typeof toggleDropdown === 'function') {
+                toggleDropdown('dropTags');
+            } else {
+                dropTags.classList.remove('open');
+            }
+        }
+    });
+}
+
+function buildSkillTagDropdownContent(students) {
+    const tagContent = document.querySelector('#dropTags .skill-tag-content');
+    if (!tagContent) return;
+
+    const tagSet = new Set();
+    students.forEach(s => {
+        if (typeof parseTagsString === 'function') {
+            parseTagsString(s.ex_tags).forEach(t => tagSet.add(t));
+            parseTagsString(s.ns_tags).forEach(t => tagSet.add(t));
+            parseTagsString(s.ps_tags).forEach(t => tagSet.add(t));
+            parseTagsString(s.ss_tags).forEach(t => tagSet.add(t));
+        }
+    });
+
+    tagContent.innerHTML = '';
+    const isPlana = document.documentElement.getAttribute('data-theme') === 'plana';
+
+    if (!document.getElementById('skill-tag-robust-style')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'skill-tag-robust-style';
+        styleEl.innerHTML = `
+            #dropTags.open .skill-tag-content {
+                display: grid !important;
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+                gap: 6px !important;
+                width: 1140px !important;
+                max-width: 95vw !important;
+                box-sizing: border-box !important;
+                padding: 10px !important;
+                height: auto !important;
+                max-height: 420px !important;
+                overflow-y: auto !important;
+            }
+            #dropTags .skill-tag-content .dropdown-option {
+                margin: 0 !important;
+                text-align: center !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 6px 4px !important;
+            }
+            #dropTags .dropdown-button {
+                height: auto !important;
+                min-height: 38px !important;
+                display: flex !important;
+                align-items: center !important;
+                flex-wrap: wrap !important;
+                gap: 5px !important;
+                padding: 6px 45px 6px 12px !important;
+                position: relative !important;
+            }
+            #dropTags .dropdown-button .badge {
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                flex: 0 1 auto !important;
+                max-width: calc(20% - 5px) !important;
+                white-space: nowrap !important;
+                box-sizing: border-box !important;
+            }
+            #dropTags .dropdown-button .badge span {
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                display: inline-block !important;
+            }
+            #dropTags .dropdown-button .badge i.badge-remove {
+                margin-left: 4px !important;
+                cursor: pointer !important;
+                display: inline-block !important;
+            }
+            #dropTags .clear-btn {
+                position: absolute !important;
+                right: 28px !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+                cursor: pointer !important;
+                z-index: 3 !important;
+            }
+            #dropTags .dropdown-button > i:not(.badge-remove) {
+                position: absolute !important;
+                right: 12px !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+                z-index: 2 !important;
+                pointer-events: none !important;
+            }
+        `;
+        document.head.appendChild(styleEl);
+    }
+
+    const searchWrapper = document.createElement('div');
+    searchWrapper.style.setProperty('position', 'sticky', 'important');
+    searchWrapper.style.setProperty('top', '0', 'important');
+    searchWrapper.style.setProperty('background', isPlana ? '#222232' : '#ffffff', 'important');
+    searchWrapper.style.setProperty('padding', '4px 0 8px 0', 'important');
+    searchWrapper.style.setProperty('margin-bottom', '4px', 'important');
+    searchWrapper.style.setProperty('border-bottom', isPlana ? '1px solid rgba(163, 161, 247, 0.25)' : '1px solid rgba(0, 178, 255, 0.2)', 'important');
+    searchWrapper.style.setProperty('z-index', '10', 'important');
+    searchWrapper.style.setProperty('grid-column', 'span 5', 'important');
+
+    const tagSearchInput = document.createElement('input');
+    tagSearchInput.type = 'text';
+    tagSearchInput.placeholder = 'タグを検索...';
+    tagSearchInput.style.width = '100%';
+    tagSearchInput.style.padding = '5px 8px';
+    tagSearchInput.style.fontSize = '12px';
+    tagSearchInput.style.border = isPlana ? '1px solid rgba(163, 161, 247, 0.3)' : '1px solid rgba(0, 178, 255, 0.2)';
+    tagSearchInput.style.borderRadius = '4px';
+    tagSearchInput.style.outline = 'none';
+    tagSearchInput.style.background = isPlana ? '#1a1a26' : '#ffffff';
+    tagSearchInput.style.color = isPlana ? '#ffffff' : '#2C3E50';
+    tagSearchInput.style.boxSizing = 'border-box';
+
+    searchWrapper.appendChild(tagSearchInput);
+    tagContent.appendChild(searchWrapper);
+
+    function refreshSelectedSkillBadges() {
+        const wrapper = document.querySelector('#dropTags');
+        const button = wrapper ? wrapper.querySelector('.dropdown-button') : null;
+        if (!button) return;
+
+        const selectedOptions = Array.from(tagContent.querySelectorAll('.dropdown-option.selected'));
+        const checkedTags = selectedOptions.map(opt => opt.getAttribute('data-value') || opt.textContent.trim());
+
+        if (typeof badgeSelectedFilters !== 'undefined') {
+            badgeSelectedFilters['dropTags'] = checkedTags;
+        }
+
+        button.innerHTML = '';
+
+        const oldClearBtn = wrapper.querySelector('.clear-btn');
+        if (oldClearBtn) oldClearBtn.remove();
+
+        if (checkedTags.length === 0) {
+            button.textContent = '選択してください';
+            const arrow = document.createElement('i');
+            arrow.className = 'fas fa-chevron-down';
+            button.appendChild(arrow);
+        } else {
+            checkedTags.forEach(tag => {
+                const badgeSpan = document.createElement('span');
+                badgeSpan.className = 'badge selected-badge';
+                
+                const textSpan = document.createElement('span');
+                textSpan.textContent = tag;
+                badgeSpan.appendChild(textSpan);
+
+                const removeIcon = document.createElement('i');
+                removeIcon.className = 'fas fa-times badge-remove';
+                removeIcon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const targetOpt = Array.from(tagContent.querySelectorAll('.dropdown-option')).find(opt => (opt.getAttribute('data-value') || opt.textContent.trim()) === tag);
+                    if (targetOpt) targetOpt.classList.remove('selected');
+                    refreshSelectedSkillBadges();
+                });
+                badgeSpan.appendChild(removeIcon);
+                
+                button.appendChild(badgeSpan);
+            });
+
+            const arrow = document.createElement('i');
+            arrow.className = 'fas fa-chevron-down';
+            button.appendChild(arrow);
+
+            const clearBtn = document.createElement('i');
+            clearBtn.className = 'fas fa-times-circle clear-btn';
+            clearBtn.title = '選択をすべてクリア';
+            clearBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                tagContent.querySelectorAll('.dropdown-option.selected').forEach(opt => opt.classList.remove('selected'));
+                refreshSelectedSkillBadges();
+            });
+            wrapper.appendChild(clearBtn);
+        }
+
+        if (typeof currentPage !== 'undefined') currentPage = 1;
+        if (typeof filterStudentsTrigger === 'function') filterStudentsTrigger();
+    }
+
+    Array.from(tagSet).sort().forEach(tag => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'dropdown-option'; 
+        optionDiv.textContent = tag;
+        optionDiv.setAttribute('data-value', tag);
+
+        if (typeof badgeSelectedFilters !== 'undefined' && badgeSelectedFilters['dropTags'] && badgeSelectedFilters['dropTags'].includes(tag)) {
+            optionDiv.classList.add('selected');
+        }
+
+        optionDiv.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('selected');
+            refreshSelectedSkillBadges();
+        });
+
+        tagContent.appendChild(optionDiv);
+    });
+
+    // ============================================================================
+    // 【修正】スキルタグ検索（部分一致で正しく絞り込めるように修正）
+    // ============================================================================
+    tagSearchInput.addEventListener('input', () => {
+        const val = tagSearchInput.value.toLowerCase().trim();
+        const options = tagContent.querySelectorAll('.dropdown-option');
+    
+        options.forEach(opt => {
+            // オプション内のテキストを取得
+            const txt = opt.textContent.toLowerCase();
+        
+            // 空白（未入力）の場合はすべて表示、入力がある場合は部分一致（includes）で判定
+            if (val === "" || txt.includes(val)) {
+                opt.style.setProperty('display', 'flex', 'important');
+            } else {
+                // 🌟 修正ポイント: 第一引数に 'display' を正しく指定して非表示（none）にします
+                opt.style.setProperty('display', 'none', 'important');
+            }
+        });
+    });
+
+    refreshSelectedSkillBadges();
+}
+
+// ============================================================================
+// 【追記】フリーワード以外のドロップダウン用のハイライト（強調表示）関数
+// ============================================================================
+function highlightFilterField(text, selectedList) {
+    if (!text || text === "-") return "-";
+    // HTMLエスケープ処理
+    const escaped = String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    
+    const searchInput = document.getElementById("liveSearch");
+    const freeKeyword = searchInput ? searchInput.value.trim() : "";
+    
+    let matchFree = false;
+    if (freeKeyword && escaped.toLowerCase().includes(freeKeyword.toLowerCase())) {
+        matchFree = true;
+    }
+    
+    let matchDropdown = false;
+    if (selectedList && selectedList.length > 0) {
+        matchDropdown = selectedList.some(val => escaped.toLowerCase() === val.toLowerCase());
+    }
+    
+    if (matchFree || matchDropdown) {
+        return `<mark class="search-highlight">${escaped}</mark>`;
+    }
+    return escaped;
+}
+
+
+
+// 各項目が呼び出すグローバル関数のマッピング（CamelCaseキーに完全対応）
+setQuickBadgeFilter = function(dropdownId, value) { clickFilterBind(dropdownId, value); };
+setQuickSchoolFilter = function(val) { clickFilterBind('dropSchool', val); };
+setQuickWeaponFilter = function(val) { clickFilterBind('dropWeapon', val); };
+setQuickAttackFilter = function(val) { clickFilterBind('dropAttack', val); };
+setQuickDefenseFilter = function(val) { clickFilterBind('dropDefense', val); };
+setQuickGearFilter = function(val) { clickFilterBind('dropGear', val); };
+setQuickCostFilter = function(val) { clickFilterBind('dropExCost', val); };
 
 document.addEventListener('DOMContentLoaded', restoreAllStates);
