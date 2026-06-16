@@ -1320,6 +1320,19 @@
     height: auto !important;
     line-height: 1 !important;
 }
+/* 各生徒の行の基準位置を設定 */
+.student-row {
+    position: relative; /* 🌟 これが抜けている、あるいは上書きされている可能性が極めて高いです */
+}
+
+/* ピンボタン自体の配置 */
+.favorite-star-btn {
+    position: absolute;
+    top: 15px;  /* 行内の上からの位置（既存のデザインに合わせて調整してください） */
+    left: 15px; /* 行内の左からの位置（既存のデザインに合わせて調整してください） */
+    z-index: 10;
+    cursor: pointer;
+}
     </style>
 </head>
 <body>
@@ -1571,6 +1584,16 @@
                         <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">腕時計</div>
                         <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">お守り</div>
                         <div class="dropdown-option" onclick="toggleOptionSelect(this, 'dropGear')">ネックレス</div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label>愛用品</label>
+                <div class="custom-dropdown" id="dropHasGear">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropHasGear')">選択してください</div>
+                <div class="dropdown-content">
+                        <div class="dropdown-option" data-value="あり" onclick="toggleOptionSelect(this, 'dropHasGear')">あり</div>
+                        <div class="dropdown-option" data-value="なし" onclick="toggleOptionSelect(this, 'dropHasGear')">なし</div>
                     </div>
                 </div>
             </div>

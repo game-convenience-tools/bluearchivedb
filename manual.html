@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCHALE Student Tactical Database - 取扱説明書 (Manual)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@500;700&family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --ba-blue: #00B2FF;
+            --ba-blue-glow: rgba(0, 178, 255, 0.3);
+            --ba-pink: #FF6FA2;
+            --ba-bg: #E3F2FD;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-main: #2C3E50;
+            --text-sub: #6C7A89;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--ba-bg);
+            color: var(--text-main);
+            font-family: 'Space Grotesk', 'Noto Sans JP', sans-serif;
+            padding: 30px 20px;
+            min-height: 100vh;
+            background-image: 
+                linear-gradient(rgba(0, 178, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 178, 255, 0.04) 1px, transparent 1px),
+                radial-gradient(at 0% 0%, rgba(255, 240, 245, 0.5) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 178, 255, 0.15) 0px, transparent 50%);
+            background-size: 30px 30px, 30px 30px, 100% 100%, 100% 100%;
+            background-attachment: fixed;
+            transition: background-color 0.3s ease;
+        }
+
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding-bottom: 40px; 
+        }
+
+        /* 元サイトと完全に同じ二重角丸サイバー装飾枠 */
+        .system-frame {
+            border: 2px solid rgba(0, 178, 255, 0.4);
+            border-radius: 16px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 0 30px rgba(0, 178, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .system-frame::before {
+            content: ''; position: absolute; top: -2px; left: -2px; width: 30px; height: 30px;
+            border-top: 5px solid var(--ba-blue); border-left: 5px solid var(--ba-blue); border-radius: 14px 0 0 0;
+        }
+        .system-frame::after {
+            content: ''; position: absolute; bottom: -2px; right: -2px; width: 30px; height: 30px;
+            border-bottom: 5px solid var(--ba-pink); border-right: 5px solid var(--ba-pink); border-radius: 0 0 14px 0;
+        }
+
+        header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 178, 255, 0.2);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .title-group h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 26px;
+            font-weight: 900;
+            color: #1A2E40;
+            letter-spacing: 1px;
+        }
+        .title-group h1 span { color: var(--ba-blue); }
+        .title-group p { font-size: 11px; color: var(--text-sub); letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
+
+        /* 左上配置のシステムスキン切り替えボタン（本体表現準拠） */
+        .cyber-btn-sm {
+            background: transparent;
+            border: 1px solid var(--ba-blue);
+            color: var(--ba-blue);
+            padding: 8px 18px;
+            font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 0 0 5px var(--ba-blue-glow);
+            box-shadow: 0 0 10px var(--ba-blue-glow);
+            transition: all 0.3s ease;
+            clip-path: polygon(0 0, 92% 0, 100% 30%, 100% 100%, 8% 100%, 0 70%);
+            white-space: nowrap;
+        }
+        .cyber-btn-sm:hover {
+            background: var(--ba-blue);
+            color: #16161A;
+            box-shadow: 0 0 15px var(--ba-blue);
+        }
+
+        /* マニュアル各セクションのスタイルカード */
+        .manual-section {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1A2E40;
+            border-left: 4px solid var(--ba-blue);
+            padding-left: 10px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: border 0.3s ease;
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2C3E50;
+            margin: 18px 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        p {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .step-num {
+            background: var(--ba-blue);
+            color: #fff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            margin-right: 4px;
+        }
+
+        .highlight-box {
+            background: rgba(0, 178, 255, 0.05);
+            border: 1px dashed rgba(0, 178, 255, 0.3);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin: 14px 0;
+            font-size: 13px;
+        }
+
+        /* 黄色系の背景に赤文字の検索ハイライト */
+        .search-highlight {
+            background-color: #FFF9C4;
+            color: #D32F2F;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .ui-key {
+            background: #eef2f5;
+            border: 1px solid #ccd5db;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #34495e;
+            font-family: sans-serif;
+        }
+
+        footer {
+            margin-top: 30px; text-align: center; font-size: 10px; color: var(--text-sub);
+            font-family: 'Orbitron', sans-serif; letter-spacing: 1px;
+        }
+
+        /* ============================================================================
+           SYSTEM:PLANA MODE 用ダークテーマ完全定義
+           ============================================================================ */
+        [data-theme="plana"] {
+            --ba-blue: #A3A1F7;
+            --ba-blue-glow: rgba(163, 161, 247, 0.4);
+            --ba-pink: #FF5A79;
+            --ba-bg: #121216;
+            --card-bg: rgba(26, 26, 36, 0.95);
+            --text-main: #F1F5F9;
+            --text-sub: #94A3B8;
+        }
+
+        [data-theme="plana"] body {
+            background-image: 
+                linear-gradient(rgba(163, 161, 247, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(163, 161, 247, 0.03) 1px, transparent 1px),
+                radial-gradient(at 0% 0%, rgba(30, 27, 46, 0.8) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(163, 161, 247, 0.12) 0px, transparent 50%);
+        }
+
+        [data-theme="plana"] .system-frame {
+            background: rgba(30, 30, 42, 0.6);
+            border-color: rgba(163, 161, 247, 0.25);
+            box-shadow: 0 0 30px rgba(163, 161, 247, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="plana"] .manual-section {
+            border-color: rgba(163, 161, 247, 0.15);
+        }
+
+        [data-theme="plana"] h2 {
+            color: #FFFFFF;
+            border-left-color: var(--ba-blue);
+        }
+
+        [data-theme="plana"] h3 {
+            color: var(--ba-blue);
+        }
+
+        [data-theme="plana"] .title-group h1 {
+            color: #FFFFFF;
+        }
+
+        [data-theme="plana"] .highlight-box {
+            background: rgba(163, 161, 247, 0.06);
+            border-color: rgba(163, 161, 247, 0.3);
+        }
+
+        [data-theme="plana"] .ui-key {
+            background: #252538;
+            border-color: #484866;
+            color: #e2e8f0;
+        }
+        
+        [data-theme="plana"] .step-num {
+            background: var(--ba-blue);
+            color: #121216;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="system-frame">
+        
+        <header>
+            <div class="mode-switcher-container">
+                <button class="cyber-btn-sm" id="themeToggleBtn" onclick="toggleTheme()">SYSTEM:ARONA MODE</button>
+            </div>
+            <div class="title-group">
+                <h1>SCHALE Student Tactical Database <span>MANUAL</span></h1>
+                <p>シャーレ生徒戦術データベース 取扱説明書</p>
+            </div>
+        </header>
+
+        <div class="manual-section">
+            <h2><i class="fa-solid fa-circle-info"></i> 1. データベースシステム概要</h2>
+            <p>本システムは、連邦捜査部「シャーレ」に所属する生徒たちの詳細な戦術パラメータ、スキル構成、固有装備、およびお気に入り状況を一元管理・検索するための高性能データ運用コンソールです。</p>
+            <p>インターフェースには、クリアブルー基調のライトテーマである「SYSTEM:ARONA MODE」と、ダークバイオレット基調のダークテーマである「SYSTEM:PLANA MODE」の2つのシステムスキンを内蔵しています。左上のシステムモード切り替えボタンをクリックすることで、画面全体の配色が瞬時に切り替わります。オペレーターの作業環境や周囲の明暗に合わせて自由に変更・選択して運用してください。</p>
+        </div>
+
+        <div class="manual-section">
+            <h2><i class="fa-solid fa-magnifying-glass"></i> 2. 検索・フィルタリングの操作詳細手順</h2>
+            <p>生徒データを迅速に探索・精査するため、システムにはリアルタイム連動型の検索フィルター群が実装されています。目的の条件に合わせて、以下の機能を単一、または組み合わせて操作してください。</p>
+            
+            <h3>① フリーキーワード検索（即時テキスト照合）</h3>
+            <p>最上部に配置されている「ライブ検索ボックス（入力窓）」に任意のテキスト（生徒名、スキル名、説明テキスト内のキーワードなど）を入力します。1文字入力するごとに全自動でデータベースのリアルタイムスキャンが行われ、以下の挙動が発生します。</p>
+            <ul>
+                <li><strong>表示データの自動絞り込み:</strong> 入力された文字列が生徒名、スキル名、またはスキル説明テキストのいずれかに含まれている生徒のみが、画面上に即座に抽出・残されます。</li>
+                <li><strong>キーワードの自動強調表示:</strong> ヒットした生徒カード内の該当するテキスト部分が、自動的に <span class="search-highlight">黄色系の背景に赤文字（ハイライト）</span> で強調描画されます。目的のキーワードが能力のどこに含まれているかを一目で確認することが可能です。</li>
+            </ul>
+            
+            <h3>② スキルタグ検索（戦術効果からのダイレクト抽出）</h3>
+            <p>フリーワード検索ボックスの直下、詳細検索ドロップダウンフィルターの手前に位置する、独立した戦術効果の選択エリアでの操作です。「コスト回復」「シールド」「気絶」「会心値増加」など、実戦において起点となる重要な効果タグがボタンとして並んでいます。</p>
+            <ul>
+                <li><strong>タグのアクティブ化:</strong> 目的の <span class="ui-key">効果タグボタン</span> を直接クリックすると、ボタンが点灯してアクティブ状態になります（もう一度同じボタンをクリックすると選択が解除されます）。</li>
+                <li><strong>スキルの自動検索ロジック:</strong> システムは生徒が持つ4つのスキル（EX/ノーマル/パッシブ/サブ）の説明文内部を自動的にスキャンし、該当する効果や戦術ロジックを保有する生徒だけを画面に抽出・再編成します。特定のデバフや支援効果を持つ要員をピンポイントで選定したい場合に非常に有効な手順です。</li>
+            </ul>
+            
+            <h3>③ 詳細検索（マルチセレクト・ドロップダウンフィルター）</h3>
+            <p>細分化された各種戦術パラメータを用いて、複数の条件を複雑に掛け合わせた絞り込みを行うための手順です。<span class="ui-key">詳細検索</span> と書かれたボタンをクリックすると、格納されていた条件選択式ドロップダウンメニュー群が下部へスムーズに展開されます。</p>
+            <ul>
+                <li><strong>複数条件の指定方法:</strong> 学園(School)、戦術役割(Role)、配置(Position)、クラス(Class)、攻撃タイプ、防御タイプ、固有武器、使用ギアなどの各ドロップダウンメニューをクリックし、表示されたリストから希望する項目を順次選択します。</li>
+                <li><strong>高度なクロス抽出（AND/OR結合）:</strong> 同一ドロップダウン内（例：学園）で複数の項目を指定した場合は「いずれかに該当（OR）」、異なる項目間（例：特定の学園 ＋ 攻撃タイプが爆発）を指定した場合は「すべての条件を満たす（AND）」というロジックで自動的に計算され、特定の部隊編成要件を満たす生徒を即座に特定できます。</li>
+            </ul>
+
+            <div class="highlight-box">
+                <strong>💡 クイックワンクリックショートカット機能（画面バッジ連動操作）:</strong><br>
+                検索結果として描画された各生徒カード内にある「学園名バッジ」「攻撃タイプバッジ」「防御タイプバッジ」「装備しているギアの名称」などは、すべて直接クリック可能なショートカットボタンとして機能します。画面上のこれらの箇所をクリックすると、その項目が**上部の詳細検索フィルターへ自動的にバインド（代入）**され、即座に同じ特性を持つ他の生徒たちの絞り込みが自動実行されます。
+            </div>
+            
+            <div class="highlight-box">
+                <strong>💡 検索条件の完全初期化（リセット手順）:</strong><br>
+                フリーワード入力、アクティブに点灯させたスキルタグ、および詳細フィルターの選択内容が複雑に絡み合った状態から初期状態に戻したい場合は、コントロールエリア内にある <span class="ui-key"><i class="fa-solid fa-trash-can"></i> 条件クリア</span> ボタンを1回クリックします。すべての検索フォームの入力内容がワンタップで完全消去され、データベース内の全生徒が再描画されます。
+            </div>
+        </div>
+
+        <div class="manual-section">
+            <h2><i class="fa-solid fa-address-card"></i> 3. タクティカルカードの情報判読とお気に入り登録</h2>
+            <p>検索結果として描画される各生徒のカードビューは、左側から右側にかけて「プロフィール・お気に入り」「戦闘属性・パラメータ」「4層スキル構造」「固有装備・アイテム」の順にデータが体系化されています。</p>
+            
+            <h3>① お気に入り（スター機能）の登録および解除手順</h3>
+            <p>各生徒の名前のすぐ左横には、システム同期用の「星マーク（スターアイコン）」が配置されています。オペレーターが頻繁に参照、または優先運用する生徒をマークするための機能です。</p>
+            <ol>
+                <li><span class="step-num">1</span> 生徒名の横にある空の星マークをクリックすると、星が黄金色に点灯し、その生徒がお気に入りリストに登録されます。</li>
+                <li><span class="step-num">2</span> 既に黄金色に点灯している星マークを再度クリックすると消灯し、お気に入りリストから即座に除外されます。</li>
+                <li><span class="step-num">3</span> <strong>ローカルストレージ（内部セーブ）仕様:</strong> この登録・変更データは、ブラウザの『ローカルストレージ（localStorage）』領域へ内部で即座に自動セーブされます。そのため、データベースのタブやブラウザを完全に閉じたり、PCを再起動した後にページを再度リロード（再読み込み）しても、あなたが構築したお気に入り登録状態はシステム内に永続的に保持されます。</li>
+            </ol>
+
+            <h3>② 4つのタクティカルスキルの定義</h3>
+            <p>カード中央エリアには、生徒の戦闘力を構成する4つのスキル枠が並列定義されています。それぞれの役割と判読方法は以下の通りです：</p>
+            <ul>
+                <li><strong>EXスキル (EX Skill):</strong> 戦闘中にコストを消費して任意で手動発動する、生徒固有の必殺アクティブスキルです。バッジ部分にはそのスキルを発動するために必要な「消費コスト数値」が合わせて明記されています。</li>
+                <li><strong>ノーマルスキル (Normal Skill):</strong> 戦闘開始後、一定時間（例：30秒ごと）が経過するか、あるいは特定の行動（例：リロード数など）をトリガーとして、自動的に巡回して自動発動する戦闘支援能力です。</li>
+                <li><strong>パッシブスキル (Passive Skill):</strong> 生徒自身の基礎ステータス（攻撃力、治癒力、最大HP、会心率など）を定常的に、かつ永続的に引き上げる常時発動型の能力です。</li>
+                <li><strong>サブスキル (Sub Skill):</strong> 自身が攻撃した際に追加ダメージを与えたり、あるいは部隊全体（味方全員）に対してバフ効果をバックグラウンドで付与し続ける支援型の能力です。</li>
+            </ul>
+        </div>
+
+        <div class="manual-section">
+            <h2><i class="fa-solid fa-sliders"></i> 4. 表示件数の変更とページネーションの操作</h2>
+            <p>データベース内の膨大なデータをスムーズに閲覧し、ブラウザの描画パフォーマンスを最適化するための表示制御手順です。</p>
+            
+            <h3>表示件数セレクターとページ移動の連動</h3>
+            <p>検索ボックスの側面に配置されている「表示件数設定」のセレクトボックスを操作します。</p>
+            <ul>
+                <li><strong>件数の選択:</strong> ドロップダウンリストから、1ページあたりに同時出力したい最大カード数を <span class="ui-key">20件</span> <span class="ui-key">50件</span> <span class="ui-key">100件</span> または制限なしの <span class="ui-key">全件表示</span> から指定・クリックします。</li>
+                <li><strong>ページネーションの挙動:</strong> 選択した上限件数を超える生徒数が検索結果としてヒットした場合、カード描画エリアの最下部に「1」「2」「3」といったページ番号ボタン（ページネーション）が動的に自動生成されます。見たいページ番号をクリックすることで、表示データが次の束へと瞬時に切り替わります。</li>
+            </ul>
+        </div>
+
+        <footer>
+            &copy; SCHALE Specified Non-Profit Corporation
+        </footer>
+    </div>
+</div>
+
+<script>
+    // システムのOSテーマ（ARONA / PLANA）切り替えロジック
+    function toggleTheme() {
+        const body = document.documentElement;
+        const btn = document.getElementById('themeToggleBtn');
+        const currentTheme = body.getAttribute('data-theme');
+        
+        if (currentTheme === 'plana') {
+            body.removeAttribute('data-theme');
+            btn.innerText = 'SYSTEM:ARONA MODE';
+        } else {
+            body.setAttribute('data-theme', 'plana');
+            btn.innerText = 'SYSTEM:PLANA MODE';
+        }
+    }
+</script>
+</body>
+</html>
