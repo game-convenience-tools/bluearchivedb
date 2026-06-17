@@ -1438,6 +1438,60 @@
     padding: 8px !important;
     box-sizing: border-box !important;
 }
+/* スラッシュ区切りの文字リンク用の装飾 */
+.clickable-val-text {
+    display: inline;
+    transition: color 0.15s ease;
+}
+
+/* マウスを乗せたとき（ホバー時）のみ下線を表示し、少し色を変える */
+.clickable-val-text:hover {
+    text-decoration: underline !important;
+    color: var(--ba-blue, #1a73e8); /* お手元の環境のメインの青色等に合わせてください */
+}
+/* 🌟 CVドロップダウンの表示スタイル（幅はお手元の希望に合わせて自由に調整してください） */
+#dropCv.active .dropdown-content,
+#dropCv.active .cv-grid-layout {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important; /* 3列表示 */
+    gap: 5px 4px !important;
+    width: 300px !important; /* 👈 300や900など、お好きな幅にいつでも自由に変更できます */
+    max-width: 90vw !important; 
+}
+
+/* 非アクティブ時は非表示 */
+#dropCv:not(.active) .dropdown-content {
+    display: none !important;
+}
+
+/* 3列分（横いっぱいに1行）をぶち抜く美しい見出し帯 */
+.cv-row-wide-title {
+    grid-column: span 3 !important; 
+    font-weight: bold !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    color: #ffffff !important;
+    background-color: #00B2FF !important; /* テーマカラーの青 */
+    margin-top: 8px !important;
+    margin-bottom: 4px !important;
+    border-radius: 4px !important;
+    pointer-events: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* グリッドに並ぶ声優ボタンのデザイン */
+.cv-grid-option {
+    padding: 6px 4px !important;
+    border-left: 3px solid #00B2FF !important;
+    box-sizing: border-box !important;
+    font-size: 12px !important;
+    text-align: center !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
 
     </style>
 </head>
@@ -1540,7 +1594,13 @@
                     </div>
                 </div>
             </div>
-
+            <div class="filter-group" id="groupCv">
+                <label>CV</label>
+                <div class="custom-dropdown" id="dropCv">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropCv')">選択してください</div>
+                    <div class="dropdown-content"></div>
+                </div>
+            </div>
             <div class="filter-group">
                 <label>武器種</label>
                 <div class="custom-dropdown" id="dropWeapon">
@@ -1693,6 +1753,13 @@
                     </div>
                 </div>
             </div>
+            <div class="filter-group" id="groupRange">
+                <label>射程</label>
+                <div class="custom-dropdown" id="dropRange">
+                    <div class="dropdown-button" onclick="toggleDropdown('dropRange')">選択してください</div>
+                    <div class="dropdown-content"></div>
+                </div>
+            </div>
             <div class="filter-group">
                 <label>愛用品</label>
                 <div class="custom-dropdown" id="dropHasGear">
@@ -1722,7 +1789,7 @@
 
 <script>
 (function() {
-    // 🌟 透過デザイン、1.5倍幅、2段折り返し、およびプラナ／ダークテーマ用のスタイルを「完全復元」
+    // 🌟 各種バグ粉砕スタイル、および【愛用品の左側アクセントボーダー完全強化版】を統合定義
     const style = document.createElement('style');
     style.innerHTML = `
         /* 1. 検索コントロール全体を、幅が狭い時に自動で折り返して2段になるように変更 */
@@ -1748,13 +1815,15 @@
             display: inline-block;
             width: 100%;
         }
-        /* 3. スキルタグリスト：横幅1.5倍、半透明背景 */
+        
+        /* 3. スキルタグリスト：通常時は左基準で横幅1.5倍、半透明背景 */
         .skill-tag-dropdown .skill-tag-content, #dropTags .skill-tag-content {
             position: absolute !important;
             top: 100% !important;
             left: 0 !important;
+            right: auto !important;
             width: 150% !important;
-            min-width: 150% !important;
+            min-width: 320px !important; /* スマホでも崩れない最低幅 */
             z-index: 999999 !important;
             background: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px) !important;
@@ -1767,6 +1836,14 @@
             overflow-y: auto !important;
             box-sizing: border-box !important;
         }
+
+        /* 🌟 右端のスペースが足りない時（画面端検知時）にだけ適用され、左側に伸ばすスタイル */
+        .skill-tag-dropdown .skill-tag-content.align-left-direction, 
+        #dropTags .skill-tag-content.align-left-direction {
+            left: auto !important;
+            right: 0 !important; /* ボタンの右端に合わせて左に広げる */
+        }
+
         .skill-tag-dropdown.active, #dropTags.active {
             z-index: 1000000 !important;
         }
@@ -1780,6 +1857,7 @@
             padding: 8px !important;
             box-sizing: border-box !important;
         }
+
         /* 4. 通常の全ドロップダウンリストの透過デザイン */
         .custom-dropdown .dropdown-content,
         .custom-dropdown [id^="drop"] {
@@ -1799,8 +1877,7 @@
             background-color: rgba(0, 178, 255, 0.1) !important;
         }
 
-        /* 🌟【完全復元】プラナモード・ダークモード時のドロップダウン背景色・文字色 */
-        /* 先ほど誤って削除してしまいリストが真っ白になった原因を完全に復旧させました */
+        /* 5. プラナモード・ダークモード時のドロップダウン背景色・文字色 */
         [data-theme="plana"] .skill-tag-dropdown .skill-tag-content,
         [data-theme="plana"] #dropTags .skill-tag-content,
         [data-theme="plana"] #dropTags .tag-search-container,
@@ -1856,16 +1933,12 @@
             border: 1px solid rgba(163, 161, 247, 0.3) !important;
         }
 
-        /* 🌟【コストドロップダウン内の『COST 値』表示修正】 */
-        /* JavaScriptデータ（裏側の文字データや値）は一切触らないため、バッジにCOSTが混入する不具合、 */
-        /* および一覧クリック時の検索デグレ（生徒が消える問題）は100%発生せず、正常に動作します。 */
+        /* 6. コストドロップダウン内の『COST 値』表示修正 */
         #dropCost .dropdown-option:not([data-value=""]):not([data-value="すべて"]),
         [id*="Cost"] .dropdown-option:not([data-value=""]):not([data-value="すべて"]) {
             display: inline-flex !important;
             align-items: center !important;
         }
-        
-        /* リスト内の選択肢の見た目上だけで、数字の手前に「COST 」の文字を安全に滑り込ませます */
         #dropCost .dropdown-option:not([data-value=""]):not([data-value="すべて"])::after,
         [id*="Cost"] .dropdown-option:not([data-value=""]):not([data-value="すべて"])::after {
             content: "COST " !important;
@@ -1873,29 +1946,111 @@
             font-weight: 700 !important;
             margin-right: 4px !important;
             margin-left: 6px !important;
-            order: -1 !important; /* 元の文字（数値・文字列）よりも手前に強制配置 */
+            order: -1 !important;
+        }
+
+        /* 7. 基本情報エリアの「4列化」を完全に粉砕する記述 */
+        @media screen and (max-width: 1250px) {
+            html body .student-container .student-row .stats-section,
+            body .stats-section {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px 12px !important;
+                width: 100% !important;
+                display: grid !important;
+            }
+            html body .student-container .student-row .stats-section .stat-badge,
+            body .stats-section .stat-badge {
+                width: 100% !important;
+                min-width: 0 !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+            }
+        }
+        @media screen and (max-width: 650px) {
+            html body .student-container .student-row .stats-section,
+            body .stats-section {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+
+        /* 🌟【新設・完全強化版】各スキルエリアの「愛用品」セクションの左側にテーマカラーのアクセント線を強制付与 */
+        .unique-gear-section,
+        .gear-section,
+        [class*="gear-section"],
+        .skill-card.unique-gear,
+        [class*="unique-gear"] {
+            border-left: 4px solid #00B2FF !important; /* 通常時（アロナブルー） */
+            padding-left: 14px !important;
+            margin-left: 2px !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* プラナテーマ、またはダークモード適用時のカラー反転（プラナパープル） */
+        [data-theme="plana"] .unique-gear-section,
+        [data-theme="plana"] .gear-section,
+        [data-theme="plana"] [class*="gear-section"],
+        [data-theme="plana"] .skill-card.unique-gear,
+        [data-theme="plana"] [class*="unique-gear"],
+        .plana-theme .unique-gear-section,
+        .plana-theme .gear-section,
+        .plana-theme [class*="gear-section"],
+        body.dark-theme .unique-gear-section,
+        body.dark-theme .gear-section,
+        body.dark-theme [class*="gear-section"],
+        .dark .unique-gear-section,
+        .dark .gear-section {
+            border-left: 4px solid #A3A1F7 !important;
         }
     `;
     document.head.appendChild(style);
 
-    // 「条件クリア」ボタンがクリックされたときに、フリーワード欄を空にし、右側の「❌」ボタンも完全に非表示化するイベント
+    // 「条件クリア」ボタンクリック時にフリーワード検索と右側の❌ボタンを完全に消去するフック
     const hookClearFilterButton = () => {
         const clearBtn = document.querySelector('.btn-clear-filter');
-        const liveSearchInput = document.getElementById('liveSearch');
-        if (clearBtn && liveSearchInput) {
-            clearBtn.addEventListener('click', () => {
+        if (!clearBtn) return;
+
+        clearBtn.addEventListener('click', () => {
+            const liveSearchInput = document.getElementById('liveSearch');
+            if (liveSearchInput) {
+                // 1. フリーワードの入力内容をクリア
                 liveSearchInput.value = '';
+                
+                // 2. 入力欄の周辺から、右側の「❌」ボタン（クリア用要素）を探し出して確実に非表示にする
                 const searchWrapper = liveSearchInput.closest('.search-wrapper') || liveSearchInput.parentElement;
                 if (searchWrapper) {
-                    const closeBtn = searchWrapper.querySelector('.clear-search, .btn-clear-search, .fa-xmark, .fa-times') || liveSearchInput.nextElementSibling;
+                    const closeBtn = searchWrapper.querySelector('.clear-search, .btn-clear-search, .fa-xmark, .fa-times, [class*="clear"]') || liveSearchInput.nextElementSibling;
                     if (closeBtn && closeBtn !== liveSearchInput) {
-                        closeBtn.style.display = 'none';
+                        closeBtn.style.setProperty('display', 'none', 'important');
                     }
                 }
-                if (typeof resetPageAndTrigger === 'function') {
-                    resetPageAndTrigger();
-                }
-            });
+            }
+            // 3. データベース全体の再描画トリガーを実行
+            if (typeof resetPageAndTrigger === 'function') {
+                resetPageAndTrigger();
+            } else if (typeof renderStudentsList === 'function' && typeof cachedStudents !== 'undefined') {
+                renderStudentsList(cachedStudents);
+            }
+        });
+    };
+
+    // 右端のスペースをミリ秒単位で計算し、足りない時だけ左側に伸ばす制御関数
+    const checkAndAdjustDropdownDirection = () => {
+        const dropTagsEl = document.getElementById('dropTags');
+        if (!dropTagsEl) return;
+        const content = dropTagsEl.querySelector('.skill-tag-content') || dropTagsEl.querySelector('.dropdown-content');
+        if (!content) return;
+
+        // 判定のため一度リセット
+        content.classList.remove('align-left-direction');
+
+        // ボタンの画面上の絶対位置、および表示リストの幅を取得
+        const rect = dropTagsEl.getBoundingClientRect();
+        const windowWidth = window.innerWidth;
+        const contentWidth = content.offsetWidth || 550; // 幅が取得できない場合の安全フォールバック
+
+        // 「ボタンの左端位置 + リスト自体の横幅」が画面幅を超えてしまう（右が切れる）場合
+        if (rect.left + contentWidth > windowWidth - 16) {
+            content.classList.add('align-left-direction'); // 右端吸着（左に広がる）クラスを付与
         }
     };
 
@@ -2108,11 +2263,14 @@
         searchInput.addEventListener('input', filterTags);
         content.insertBefore(container, content.firstChild);
 
-        // 閉じた時のリセット処理 (MutationObserver)
+        // 開閉クラス変化を検知して、開いた瞬間に右切れを判定する（MutationObserver）
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.attributeName === 'class') {
-                    if (!dropTagsEl.classList.contains('active')) {
+                    if (dropTagsEl.classList.contains('active') || dropTagsEl.classList.contains('open')) {
+                        setTimeout(checkAndAdjustDropdownDirection, 10);
+                    } else {
+                        // 閉じた時の通常リセット処理
                         searchInput.value = '';
                         activeFilterBunrui = null;
                         const isPlana = document.documentElement.getAttribute('data-theme') === 'plana' || document.body.classList.contains('plana-theme');
@@ -2124,11 +2282,15 @@
                         content.querySelectorAll('.dropdown-option, .dropdown-group-header-title').forEach(el => {
                             el.style.removeProperty('display'); 
                         });
+                        content.classList.remove('align-left-direction');
                     }
                 }
             });
         });
         observer.observe(dropTagsEl, { attributes: true });
+
+        // 横幅が変更された場合もリアルタイムに追従
+        window.addEventListener('resize', checkAndAdjustDropdownDirection);
     };
 
     // 🌟【外側クリック修正】画面外をクリックした時にすべてのドロップダウンを確実に閉じる
@@ -2149,14 +2311,17 @@
     if (typeof originalBuildDropdowns === 'function') {
         window.buildDynamicDropdowns = function(...args) {
             originalBuildDropdowns.apply(this, args);
-            setTimeout(attachSearchFeature, 50);
+            setTimeout(() => {
+                attachSearchFeature();
+                hookClearFilterButton(); // リビルド時にもクリアボタンを再バインド
+            }, 50);
         };
     } else {
         const timer = setInterval(() => {
             const dropTagsEl = document.getElementById('dropTags');
             if (dropTagsEl && dropTagsEl.querySelector('.dropdown-option')) {
                 attachSearchFeature();
-                hookClearFilterButton();
+                hookClearFilterButton(); // 初回起動時にバインド
                 clearInterval(timer);
             }
         }, 300);

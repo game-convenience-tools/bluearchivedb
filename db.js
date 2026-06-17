@@ -405,7 +405,8 @@ function buildDynamicDropdowns(students) {
             }
         });
     });
-
+    
+    
     // 🌟 システムの初期化導線を維持するため、'dropTags' をここに戻しました
     const dropdownIds = [
         'dropSchool', 'dropType', 'dropWeapon', 'dropCover',
@@ -426,6 +427,10 @@ function buildDynamicDropdowns(students) {
         if (content) content.innerHTML = '';
     });
 
+    // CVと射程の動的データ収集用のSetを定義
+    let cvs = new Set();
+    let ranges = new Set();
+
     // 通常項目の収集
     const schools = new Set();
     const types = new Set();
@@ -444,6 +449,7 @@ function buildDynamicDropdowns(students) {
     students.forEach(s => {
         if (s.school) schools.add(s.school);
         if (s.type) types.add(s.type);
+        if (s.cv && s.cv !== "-") cvs.add(s.cv.trim());
         if (s.weapon) weapons.add(s.weapon);
         if (s.cover) covers.add(s.cover);
         if (s.role) roles.add(s.role);
@@ -457,6 +463,7 @@ function buildDynamicDropdowns(students) {
         if (s.gear1) gears.add(s.gear1);
         if (s.gear2) gears.add(s.gear2);
         if (s.gear3) gears.add(s.gear3);
+        if (s.range && s.range !== "-") ranges.add(s.range);
     });
 
     const populate = (id, set, isCover = false) => {
@@ -494,8 +501,14 @@ function buildDynamicDropdowns(students) {
         });
     };
 
+    // 🌟 動的追加データのソート
+    let cvList = Array.from(cvs).sort();
+    
+    let rangeList = Array.from(ranges).sort();
+
     populate('dropSchool', schools);
     populate('dropType', types);
+    //populate('dropCv', cvList);
     populate('dropWeapon', weapons);
     populate('dropCover', covers, true);
     populate('dropRole', roles);
@@ -506,6 +519,7 @@ function buildDynamicDropdowns(students) {
     populate('dropUrban', urbans);
     populate('dropOutdoor', outdoors);
     populate('dropIndoor', indoors);
+    populate('dropRange', rangeList);
     populate('dropGear', gears);
 
     // 🌟 新しいグループ化スキルタグ（dropTags）の生成処理
@@ -643,6 +657,129 @@ function buildDynamicDropdowns(students) {
             dropTagsEl.classList.remove('active');
         }
     });
+    // ============================================================================
+    // 🌟 【確定版】CVドロップダウン（dropCv）行見出しのみ ＋ 50音単位での強制改行処理
+    // ============================================================================
+    const dropCvEl = document.getElementById('dropCv');
+    if (dropCvEl) {
+        const content = dropCvEl.querySelector('.dropdown-content') || dropCvEl.querySelector('.skill-tag-content');
+        if (content) {
+            content.innerHTML = ''; // 既存のリストをクリア
+            
+            content.classList.add('cv-grid-layout'); 
+            content.style.boxSizing = 'border-box';
+
+            // 50音の「1文字（あ、い、う…）」を取得するヘルパー関数
+            function getInitialChar(studentObj) {
+                if (!studentObj || !studentObj.cv) return 'その他';
+                const rawName = studentObj.kana || studentObj.cv_kana || studentObj.cv_yomi || studentObj.cv;
+                const str = String(rawName).trim();
+                const firstChar = str.charAt(0);
+                
+                if (/^[A-Za-z0-9]/.test(firstChar)) return firstChar.toUpperCase();
+
+                const code = firstChar.charCodeAt(0);
+                let char = firstChar;
+                if (code >= 0x30A1 && code <= 0x30F6) {
+                    char = String.fromCharCode(code - 0x0060);
+                }
+                if (/^[あ-ん]/.test(char)) return char;
+                return 'その他';
+            }
+
+            // 1文字（あ、い、う）から所属する「〇〇行」のグループ名を返すマップ
+            function getRowName(char) {
+                if (/^[あ-お]/.test(char)) return 'あ行';
+                if (/^[か-ご]/.test(char)) return 'か行';
+                if (/^[さ-ぞ]/.test(char)) return 'さ行';
+                if (/^[た-ど]/.test(char)) return 'た行';
+                if (/^[な-の]/.test(char)) return 'な行';
+                if (/^[は-ぼぱ-ぽ]/.test(char)) return 'は行';
+                if (/^[ま-も]/.test(char)) return 'ま行';
+                if (/^[や-よ]/.test(char)) return 'や行';
+                if (/^[ら-ろ]/.test(char)) return 'ら行';
+                if (/^[わ-ん]/.test(char)) return 'わ行';
+                if (/^[A-Z0-9]/.test(char)) return 'アルファベット・英数字';
+                return 'その他';
+            }
+
+            // 50音・アルファベットすべての細分化された順序リスト
+            const charOrder = [
+                'あ','い','う','え','お',
+                'か','が','き','ぎ','く','ぐ','け','げ','こ','ご',
+                'さ','ざ','し','じ','す','ず','せ','ぜ','そ','ぞ',
+                'た','だ','ち','ぢ','つ','づ','て','で','と','ど',
+                'な','に','ぬ','ね','の',
+                'は','ば','ぱ','ひ','び','ぴ','ふ','ぶ','ぷ','へ','べ','ぺ','ほ','ぼ','ぽ',
+                'ま','み','む','め','も',
+                'や','ゆ','よ',
+                'ら','り','る','れ','ろ',
+                'わ','を','ん',
+                'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','その他'
+            ];
+
+            // 50音1文字ごとの声優リストをあらかじめ作成
+            const cvGroupsByChar = {};
+            const processedCvs = new Set();
+
+            cachedStudents.forEach(s => {
+                if (!s.cv || s.cv === "-" || processedCvs.has(s.cv)) return;
+                const char = getInitialChar(s);
+                if (!cvGroupsByChar[char]) cvGroupsByChar[char] = [];
+                cvGroupsByChar[char].push(s.cv);
+                processedCvs.add(s.cv);
+            });
+
+            // すでに描画した「行見出し（あ行、か行など）」を追跡するSet
+            const renderedRows = new Set();
+
+            // すべての50音文字を順番にループ処理
+            charOrder.forEach(char => {
+                const cvListForChar = cvGroupsByChar[char];
+                if (!cvListForChar || cvListForChar.length === 0) return;
+
+                // 🌟 その文字が所属する「行名（あ行など）」を取得
+                const rowName = getRowName(char);
+
+                // まだその「行（例：あ行）」の大きな青い帯を描画していない場合は、ここで初めて描画する
+                if (!renderedRows.has(rowName)) {
+                    const rowTitle = document.createElement('div');
+                    rowTitle.className = 'cv-row-wide-title'; 
+                    rowTitle.innerText = `【${rowName}】`;
+                    content.appendChild(rowTitle);
+                    renderedRows.add(rowName); // 描画済みリストに記録
+                } else {
+                    // 🌟 既に同じ「行」の帯があるが、50音（例：「あ」から「い」）が変わるタイミングの処理
+                    // ラベル（【い】など）は消しつつ、絶対に文字の終わりと始まりを詰めないための「透明な改行ブロック」を挟む
+                    const lineBreaker = document.createElement('div');
+                    lineBreaker.style.cssText = `
+                        grid-column: span 3 !important; 
+                        height: 6px !important; 
+                        pointer-events: none !important;
+                    `;
+                    content.appendChild(lineBreaker);
+                }
+
+                // その文字（例：「い」）に所属する声優名を3列グリッドに流し込む
+                cvListForChar.sort().forEach(cvName => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-option cv-grid-option';
+                    div.innerText = cvName;
+                    div.title = cvName;
+                    
+                    div.onclick = function(e) { 
+                        e.stopPropagation(); // 誤作動（外側クリックイベントの誘発）を完全に防止
+                        
+                        // 🌟 既存の選択・解除システムを呼び出す（これだけで上部のバッジ連動や検索が走ります）
+                        toggleOptionSelect(this, 'dropCv'); 
+                        
+                        // 💡 閉じる命令（remove('active')）を撤去したため、開いたままになります
+                    };
+                    content.appendChild(div);
+                });
+            });
+        }
+    }
 }
 
 // ============================================================================
@@ -693,6 +830,7 @@ function renderStudentsList(students) {
     // 🌟 フリーワード以外の選択状態を取得（ハイライト表示用）
     const selSchool = getCheckedValues('dropSchool');
     const selType = getCheckedValues('dropType');
+    const selCv = getCheckedValues('dropCv');
     const selWeapon = getCheckedValues('dropWeapon');
     // 🌟 遮蔽ドロップダウンの選択肢（"〇:利用する" など）から「〇」や「×」の記号部分だけを抽出して判定用に使う
     const selCover = getCheckedValues('dropCover').map(v => v.split(':')[0].trim());
@@ -704,6 +842,7 @@ function renderStudentsList(students) {
     const selUrban = getCheckedValues('dropUrban');
     const selOutdoor = getCheckedValues('dropOutdoor');
     const selIndoor = getCheckedValues('dropIndoor');
+    const selRange = getCheckedValues('dropRange');
 
     function escapeHtml(str) {
         if (!str) return "";
@@ -726,7 +865,29 @@ function renderStudentsList(students) {
             return escaped;
         }
     }
-
+    
+// 🌟【新設】射程（数値・文字列混在）専用のハイライト関数
+    function highlightRangeField(text, selectedList) {
+        if (text === undefined || text === null || text === "-") return "-";
+        const escaped = escapeHtml(text);
+        
+        let matchFree = false;
+        if (freeKeyword && escaped.toLowerCase().includes(freeKeyword.toLowerCase())) {
+            matchFree = true;
+        }
+        
+        let matchDropdown = false;
+        if (selectedList && selectedList.length > 0) {
+            // お互いを文字列に揃えて判定
+            matchDropdown = selectedList.map(String).includes(String(text).trim());
+        }
+        
+        if (matchFree || matchDropdown) {
+            return `<mark class="search-highlight">${escaped}</mark>`;
+        }
+        return escaped;
+    }
+    
     // 🌟 各種フィルター項目用のハイライト関数
     function highlightFilterField(text, selectedList) {
         if (!text || text === "-") return "-";
@@ -854,7 +1015,9 @@ function renderStudentsList(students) {
         const pinClass = isFav ? 'is-fav' : 'not-fav';
         const pinIcon = '📌';
 
-        const cvText = s.cv ? `CV: ${highlightText(s.cv)}` : "CV: -";
+        const cvText = s.cv 
+            ? `CV: <span class="clickable-val" onclick="clickFilterBind('dropCv', '${s.cv.replace(/'/g, "\\'")}')" style="cursor: pointer; text-decoration: underline;">${highlightText(s.cv)}</span>` 
+            : "CV: -";
 
         const hasItem = s.item_name && s.item_name !== "なし" && s.item_name !== "-";
         const displayItemName = hasItem ? highlightText(s.item_name) : "なし";
@@ -876,12 +1039,26 @@ function renderStudentsList(students) {
                 <div class="stat-badge">位置: <span class="clickable-val" onclick="clickFilterBind('dropPos', '${s.position}')">${highlightFilterField(s.position, selPos)}</span></div>
                 <div class="stat-badge">攻撃: <span class="type-badge-style ${atkClass}" onclick="clickFilterBind('dropAttack', '${s.attack}')">${highlightFilterField(s.attack, selAttack)}</span></div>
                 <div class="stat-badge">防御: <span class="type-badge-style ${defClass}" onclick="clickFilterBind('dropDefense', '${s.defense}')">${highlightFilterField(s.defense, selDefense)}</span></div>
-                <div class="stat-badge">武器/遮蔽: <span><span class="clickable-val" onclick="clickFilterBind('dropWeapon', '${s.weapon}')">${highlightFilterField(s.weapon, selWeapon)}</span> / <span class="clickable-val" onclick="clickFilterBind('dropCover', '${s.cover}')">${highlightCoverField(s.cover, selCover)}</span></span></div>
-                <div class="stat-badge">市/外/内: <span><span class="clickable-val" onclick="clickFilterBind('dropUrban', '${s.urban}')">${highlightFilterField(s.urban, selUrban)}</span> / <span class="clickable-val" onclick="clickFilterBind('dropOutdoor', '${s.outdoor}')">${highlightFilterField(s.outdoor, selOutdoor)}</span> / <span class="clickable-val" onclick="clickFilterBind('dropIndoor', '${s.indoor}')">${highlightFilterField(s.indoor, selIndoor)}</span></span></div>
+                <div class="stat-badge">武器/遮蔽: 
+                    <span>
+                        <span class="clickable-val-text" onclick="clickFilterBind('dropWeapon', '${s.weapon}')" style="cursor: pointer;">${highlightFilterField(s.weapon, selWeapon)}</span> 
+                        / 
+                        <span class="clickable-val-text" onclick="clickFilterBind('dropCover', '${s.cover}')" style="cursor: pointer;">${highlightCoverField(s.cover, selCover)}</span>
+                    </span>
+                </div>
+                <div class="stat-badge">市/外/内: 
+                    <span>
+                        <span class="clickable-val-text" onclick="clickFilterBind('dropUrban', '${s.urban}')" style="cursor: pointer;">${highlightFilterField(s.urban, selUrban)}</span> 
+                        / 
+                        <span class="clickable-val-text" onclick="clickFilterBind('dropOutdoor', '${s.outdoor}')" style="cursor: pointer;">${highlightFilterField(s.outdoor, selOutdoor)}</span> 
+                        / 
+                        <span class="clickable-val-text" onclick="clickFilterBind('dropIndoor', '${s.indoor}')" style="cursor: pointer;">${highlightFilterField(s.indoor, selIndoor)}</span>
+                    </span>
+                </div>
                 <div class="stat-badge">装備1: <span class="clickable-gear" onclick="clickFilterBind('dropGear', '${gear1Text}')">${highlightGear(gear1Text)}</span></div>
                 <div class="stat-badge">装備2: <span class="clickable-gear" onclick="clickFilterBind('dropGear', '${gear2Text}')">${highlightGear(gear2Text)}</span></div>
                 <div class="stat-badge">装備3: <span class="clickable-gear" onclick="clickFilterBind('dropGear', '${gear3Text}')">${highlightGear(gear3Text)}</span></div>
-                <div class="stat-badge">射程: <span>${highlightText(s.range)}</span></div>
+                <div class="stat-badge">射程: <span class="clickable-val" onclick="clickFilterBind('dropRange', '${String(s.range).replace(/'/g, "\\'")}')" style="cursor: pointer; text-decoration: underline;">${highlightRangeField(s.range, selRange)}</span></div>
             </div>
 
             <div class="skills-section">
@@ -1522,6 +1699,7 @@ filterStudentsTrigger = function() {
     // 既存のバッジ選択フィルター状態の取得
     const selSchool = badgeSelectedFilters.dropSchool || [];
     const selType = badgeSelectedFilters.dropType || [];
+    const selCv = getCheckedValues('dropCv');
     const selWeapon = badgeSelectedFilters.dropWeapon || [];
     const selCover = badgeSelectedFilters.dropCover || [];
     const selRole = badgeSelectedFilters.dropRole || [];
@@ -1534,8 +1712,9 @@ filterStudentsTrigger = function() {
     const selIndoor = badgeSelectedFilters.dropIndoor || [];
     const selGear = badgeSelectedFilters.dropGear || [];
     const selTags = badgeSelectedFilters.dropTags || [];
+    const selRange = getCheckedValues('dropRange');
     const selHasGear = getCheckedValues('dropHasGear'); // 「あり」「なし」の選択状態を取得
-
+    
     // 生徒データのフィルタリングメイン処理
     const filtered = cachedStudents.filter(s => {
         // お気に入りフィルター判定
@@ -1591,11 +1770,13 @@ filterStudentsTrigger = function() {
             if (!poolString.includes(freeText)) {
                 return false;
             }
+            
         }
 
         // ドロップダウンマルチセレクト群とのAND判定
         if (selSchool.length > 0 && !selSchool.includes(s.school)) return false;
         if (selType.length > 0 && !selType.includes(s.type)) return false;
+        if (selCv.length > 0 && !selCv.includes(s.cv)) return false;
         if (selWeapon.length > 0 && !selWeapon.includes(s.weapon)) return false;
         if (selRole.length > 0 && !selRole.includes(s.role)) return false;
         if (selPos.length > 0 && !selPos.includes(s.position)) return false;
@@ -1619,6 +1800,15 @@ filterStudentsTrigger = function() {
             if (s.ex_cost === undefined || s.ex_cost === null || s.ex_cost === "") return false;
             let matchCost = selExCost.some(val => String(s.ex_cost) === val.replace("コスト", "").trim());
             if (!matchCost) return false;
+        }
+        
+        // 🌟【修正箇所】射程の判定を文字列（String）に統一して型安全に比較
+        if (selRange.length > 0) {
+            // 生徒側の射程データを安全に文字列化（nullやundefinedなら空文字に）
+            const studentRangeStr = (s.range !== undefined && s.range !== null) ? String(s.range).trim() : "";
+            // 選択されたリスト（こちらも全て文字列化）に生徒の射程文字列が含まれているか判定
+            const matchRange = selRange.map(String).includes(studentRangeStr);
+            if (!matchRange) return false;
         }
         
         if (selHasGear.length > 0) {
@@ -1834,5 +2024,7 @@ setQuickAttackFilter = function(val) { clickFilterBind('dropAttack', val); };
 setQuickDefenseFilter = function(val) { clickFilterBind('dropDefense', val); };
 setQuickGearFilter = function(val) { clickFilterBind('dropGear', val); };
 setQuickCostFilter = function(val) { clickFilterBind('dropExCost', val); };
+setQuickCvFilter = function(val) { clickFilterBind('dropCv', val); };
+setQuickRangeFilter = function(val) { clickFilterBind('dropRange', val); };
 
 document.addEventListener('DOMContentLoaded', restoreAllStates);
