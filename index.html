@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@500;700&family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+    <link rel="icon" href="arona.jpg" type="image/jpeg">
     <style>
         :root {
             --ba-blue: #00B2FF;
@@ -1722,16 +1722,33 @@
 
 <script>
 (function() {
-    // 🌟 全てのドロップダウンの背景を「元の透過（半透明）バージョン」に戻し、各モードの背景と綺麗に調和させます
+    // 🌟 透過デザイン、1.5倍幅、2段折り返し、およびプラナ／ダークテーマ用のスタイルを「完全復元」
     const style = document.createElement('style');
     style.innerHTML = `
-        /* 1. スキルタグの親要素の配置ルール */
+        /* 1. 検索コントロール全体を、幅が狭い時に自動で折り返して2段になるように変更 */
+        .search-controls {
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            width: 100% !important;
+            flex-wrap: wrap !important;
+        }
+        .search-wrapper {
+            flex: 1 1 300px !important;
+            max-width: 420px !important;
+            min-width: 200px !important;
+        }
+        .search-limit-wrapper, .ba-btn {
+            flex-shrink: 0 !important;
+        }
+
+        /* 2. スキルタグの親要素の配置ルール */
         .skill-tag-dropdown, #dropTags {
             position: relative !important;
             display: inline-block;
             width: 100%;
         }
-        /* 2. スキルタグリスト：横幅1.5倍、元の美しい半透明背景へ戻す */
+        /* 3. スキルタグリスト：横幅1.5倍、半透明背景 */
         .skill-tag-dropdown .skill-tag-content, #dropTags .skill-tag-content {
             position: absolute !important;
             top: 100% !important;
@@ -1750,11 +1767,9 @@
             overflow-y: auto !important;
             box-sizing: border-box !important;
         }
-        /* 3. 開いているドロップダウンのボタン親枠の立体優先度 */
         .skill-tag-dropdown.active, #dropTags.active {
             z-index: 1000000 !important;
         }
-        /* 4. スキルタグ内の検索窓固定エリアの背景も半透明化に同期 */
         #dropTags .tag-search-container {
             position: sticky !important;
             top: 0 !important;
@@ -1765,7 +1780,7 @@
             padding: 8px !important;
             box-sizing: border-box !important;
         }
-        /* 5. 通常の全ドロップダウンリストも透過デザインに統一 */
+        /* 4. 通常の全ドロップダウンリストの透過デザイン */
         .custom-dropdown .dropdown-content,
         .custom-dropdown [id^="drop"] {
             position: absolute !important;
@@ -1776,7 +1791,6 @@
             border: 1px solid rgba(0, 178, 255, 0.2) !important;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
         }
-        /* 各ドロップダウン内のオプション文字色・ホバー挙動 */
         .dropdown-option {
             color: var(--text-main, #2C3E50) !important;
             background-color: transparent;
@@ -1784,24 +1798,106 @@
         .dropdown-option:hover {
             background-color: rgba(0, 178, 255, 0.1) !important;
         }
-        /* プラナモード（ダークテーマ）適用時の半透明背景の上書き定義 */
+
+        /* 🌟【完全復元】プラナモード・ダークモード時のドロップダウン背景色・文字色 */
+        /* 先ほど誤って削除してしまいリストが真っ白になった原因を完全に復旧させました */
         [data-theme="plana"] .skill-tag-dropdown .skill-tag-content,
         [data-theme="plana"] #dropTags .skill-tag-content,
         [data-theme="plana"] #dropTags .tag-search-container,
         [data-theme="plana"] .custom-dropdown .dropdown-content,
-        [data-theme="plana"] .custom-dropdown [id^="drop"] {
+        [data-theme="plana"] .custom-dropdown [id^="drop"],
+        .plana-theme .dropdown-content,
+        body.dark-theme .dropdown-content,
+        .dark .dropdown-content {
             background: rgba(26, 26, 36, 0.95) !important;
             backdrop-filter: blur(10px) !important;
             border: 1px solid rgba(163, 161, 247, 0.4) !important;
             color: #F1F5F9 !important;
         }
-        [data-theme="plana"] .tag-search-input {
+        *[data-theme="plana"] .dropdown-group-header-title,
+        .plana-theme .dropdown-group-header-title,
+        body.dark-theme .dropdown-group-header-title,
+        .dark .dropdown-group-header-title {
+            color: #A3A1F7 !important;
+            border-bottom: 1px solid rgba(163, 161, 247, 0.3) !important;
+        }
+        *[data-theme="plana"] .dropdown-option::before,
+        .plana-theme .dropdown-option::before,
+        body.dark-theme .dropdown-option::before {
+            border-color: rgba(163, 161, 247, 0.6) !important;
+        }
+        *[data-theme="plana"] .dropdown-option.selected::before,
+        .plana-theme .dropdown-option.selected::before,
+        body.dark-theme .dropdown-option.selected::before {
+            background-color: #A3A1F7 !important;
+            border-color: #A3A1F7 !important;
+        }
+        *[data-theme="plana"] .dropdown-option.selected,
+        .plana-theme .dropdown-option.selected,
+        body.dark-theme .dropdown-option.selected {
+            border-left: 3px solid #A3A1F7 !important;
+            background-color: rgba(163, 161, 247, 0.15) !important;
+        }
+        *[data-theme="plana"] .dropdown-option:hover,
+        .plana-theme .dropdown-option:hover,
+        body.dark-theme .dropdown-option:hover {
+            background-color: rgba(163, 161, 247, 0.1) !important;
+        }
+        *[data-theme="plana"] .tag-search-container button,
+        .plana-theme .tag-search-container button {
+            border-color: rgba(163, 161, 247, 0.4) !important;
+            background-color: rgba(163, 161, 247, 0.1) !important;
+            color: #F1F5F9 !important;
+        }
+        *[data-theme="plana"] .tag-search-input,
+        .plana-theme .tag-search-input {
             background: #1A1A24 !important;
             color: #FFFFFF !important;
             border: 1px solid rgba(163, 161, 247, 0.3) !important;
         }
+
+        /* 🌟【コストドロップダウン内の『COST 値』表示修正】 */
+        /* JavaScriptデータ（裏側の文字データや値）は一切触らないため、バッジにCOSTが混入する不具合、 */
+        /* および一覧クリック時の検索デグレ（生徒が消える問題）は100%発生せず、正常に動作します。 */
+        #dropCost .dropdown-option:not([data-value=""]):not([data-value="すべて"]),
+        [id*="Cost"] .dropdown-option:not([data-value=""]):not([data-value="すべて"]) {
+            display: inline-flex !important;
+            align-items: center !important;
+        }
+        
+        /* リスト内の選択肢の見た目上だけで、数字の手前に「COST 」の文字を安全に滑り込ませます */
+        #dropCost .dropdown-option:not([data-value=""]):not([data-value="すべて"])::after,
+        [id*="Cost"] .dropdown-option:not([data-value=""]):not([data-value="すべて"])::after {
+            content: "COST " !important;
+            font-family: 'Orbitron', sans-serif !important;
+            font-weight: 700 !important;
+            margin-right: 4px !important;
+            margin-left: 6px !important;
+            order: -1 !important; /* 元の文字（数値・文字列）よりも手前に強制配置 */
+        }
     `;
     document.head.appendChild(style);
+
+    // 「条件クリア」ボタンがクリックされたときに、フリーワード欄を空にし、右側の「❌」ボタンも完全に非表示化するイベント
+    const hookClearFilterButton = () => {
+        const clearBtn = document.querySelector('.btn-clear-filter');
+        const liveSearchInput = document.getElementById('liveSearch');
+        if (clearBtn && liveSearchInput) {
+            clearBtn.addEventListener('click', () => {
+                liveSearchInput.value = '';
+                const searchWrapper = liveSearchInput.closest('.search-wrapper') || liveSearchInput.parentElement;
+                if (searchWrapper) {
+                    const closeBtn = searchWrapper.querySelector('.clear-search, .btn-clear-search, .fa-xmark, .fa-times') || liveSearchInput.nextElementSibling;
+                    if (closeBtn && closeBtn !== liveSearchInput) {
+                        closeBtn.style.display = 'none';
+                    }
+                }
+                if (typeof resetPageAndTrigger === 'function') {
+                    resetPageAndTrigger();
+                }
+            });
+        }
+    };
 
     const attachSearchFeature = () => {
         const dropTagsEl = document.getElementById('dropTags');
@@ -1876,7 +1972,7 @@
                         const matchesBunrui = !activeFilterBunrui || bunruiName === activeFilterBunrui;
 
                         if (matchesSearch && matchesBunrui) {
-                            next.style.setProperty('display', 'block', 'important');
+                            next.style.setProperty('display', 'flex', 'important');
                             hasVisibleOption = true;
                         } else {
                             next.style.setProperty('display', 'none', 'important');
@@ -1918,8 +2014,12 @@
         `;
         resetBtn.addEventListener('click', () => {
             activeFilterBunrui = null;
-            buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', 'rgba(0, 178, 255, 0.1)', 'important'));
-            resetBtn.style.setProperty('background-color', 'rgba(0, 178, 255, 0.25)', 'important');
+            const isPlana = document.documentElement.getAttribute('data-theme') === 'plana' || document.body.classList.contains('plana-theme');
+            const baseBg = isPlana ? 'rgba(163, 161, 247, 0.1)' : 'rgba(0, 178, 255, 0.1)';
+            const activeBg = isPlana ? 'rgba(163, 161, 247, 0.25)' : 'rgba(0, 178, 255, 0.25)';
+
+            buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', baseBg, 'important'));
+            resetBtn.style.setProperty('background-color', activeBg, 'important');
             filterTags();
         });
         buttonGroup.appendChild(resetBtn);
@@ -1967,14 +2067,19 @@
             btn.appendChild(img);
 
             btn.addEventListener('click', () => {
+                const isPlana = document.documentElement.getAttribute('data-theme') === 'plana' || document.body.classList.contains('plana-theme');
+                const baseBg = isPlana ? 'rgba(163, 161, 247, 0.1)' : 'rgba(0, 178, 255, 0.1)';
+                const activeResetBg = isPlana ? 'rgba(163, 161, 247, 0.25)' : 'rgba(0, 178, 255, 0.25)';
+                const activeColor = isPlana ? '#A3A1F7' : '#00B2FF';
+
                 if (activeFilterBunrui === bunruiName) {
                     activeFilterBunrui = null;
-                    btn.style.setProperty('background-color', 'rgba(0, 178, 255, 0.1)', 'important');
-                    resetBtn.style.setProperty('background-color', 'rgba(0, 178, 255, 0.25)', 'important');
+                    btn.style.setProperty('background-color', baseBg, 'important');
+                    resetBtn.style.setProperty('background-color', activeResetBg, 'important');
                 } else {
                     activeFilterBunrui = bunruiName;
-                    buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', 'rgba(0, 178, 255, 0.1)', 'important'));
-                    btn.style.setProperty('background-color', '#00B2FF', 'important');
+                    buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', baseBg, 'important'));
+                    btn.style.setProperty('background-color', activeColor, 'important');
                 }
                 filterTags();
             });
@@ -2003,15 +2108,19 @@
         searchInput.addEventListener('input', filterTags);
         content.insertBefore(container, content.firstChild);
 
-        // --- 6. 閉じた時のリセット処理 (MutationObserver) ---
+        // 閉じた時のリセット処理 (MutationObserver)
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.attributeName === 'class') {
                     if (!dropTagsEl.classList.contains('active')) {
                         searchInput.value = '';
                         activeFilterBunrui = null;
-                        buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', 'rgba(0, 178, 255, 0.1)', 'important'));
-                        resetBtn.style.setProperty('background-color', 'rgba(0, 178, 255, 0.25)', 'important');
+                        const isPlana = document.documentElement.getAttribute('data-theme') === 'plana' || document.body.classList.contains('plana-theme');
+                        const baseBg = isPlana ? 'rgba(163, 161, 247, 0.1)' : 'rgba(0, 178, 255, 0.1)';
+                        const resetBg = isPlana ? 'rgba(163, 161, 247, 0.25)' : 'rgba(0, 178, 255, 0.25)';
+
+                        buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', baseBg, 'important'));
+                        resetBtn.style.setProperty('background-color', resetBg, 'important');
                         content.querySelectorAll('.dropdown-option, .dropdown-group-header-title').forEach(el => {
                             el.style.removeProperty('display'); 
                         });
@@ -2022,25 +2131,19 @@
         observer.observe(dropTagsEl, { attributes: true });
     };
 
-    // 🌟【外側クリック完全修正】画面外をクリックした時にすべてのドロップダウンを確実に閉じるグローバルキャプチャイベント
+    // 🌟【外側クリック修正】画面外をクリックした時にすべてのドロップダウンを確実に閉じる
     document.addEventListener('click', function(e) {
-        // 詳細検索エリアの通常ドロップダウン、およびスキルタグドロップダウンを両方取得
         const allDropdowns = document.querySelectorAll('.custom-dropdown, .skill-tag-dropdown, #dropTags');
-        
         allDropdowns.forEach(dropdown => {
-            // クリックされたターゲットがドロップダウン自身、またはその内部のコンテンツでない場合
             if (!dropdown.contains(e.target)) {
-                // クラスを外して閉じる処理を実行
                 dropdown.classList.remove('open', 'active');
-                
-                // db.js側のトグル処理（display: block / inlineスタイル）の干渉を確実に上書きして非表示化
                 const content = dropdown.querySelector('.dropdown-content') || dropdown.querySelector('.skill-tag-content');
                 if (content) {
                     content.style.display = 'none';
                 }
             }
         });
-    }, true); // 第3引数をtrue（キャプチャリングモード）にすることで、db.js等の各種内側イベントに邪魔されず最優先で外側クリックを拾い上げます
+    }, true);
 
     const originalBuildDropdowns = window.buildDynamicDropdowns;
     if (typeof originalBuildDropdowns === 'function') {
@@ -2053,6 +2156,7 @@
             const dropTagsEl = document.getElementById('dropTags');
             if (dropTagsEl && dropTagsEl.querySelector('.dropdown-option')) {
                 attachSearchFeature();
+                hookClearFilterButton();
                 clearInterval(timer);
             }
         }, 300);

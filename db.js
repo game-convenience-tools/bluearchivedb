@@ -159,8 +159,6 @@ function applyBrowserZoom120() {
     const style = document.createElement('style');
     style.textContent = `
         html, body {
-            zoom: 1.2 !important; /* 全体要素を1.2倍に引き伸ばす */
-            -moz-transform: scale(1.2); /* Firefox用の拡大対応 */
             -moz-transform-origin: top center;
         }
         body .wrapper .container, body .container {
