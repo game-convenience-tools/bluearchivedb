@@ -1493,6 +1493,105 @@
     cursor: pointer;
 }
 
+/* ============================================================================
+   🔮 プラナモード（[data-theme="plana"]）限定：ラベルとボタン左線だけを紫にする完全確定CSS
+   ============================================================================ */
+
+/* --- 1. 【ラベル】直塗りされた青の!importantをクラス名と組み合わせて精密に撃破し、紫にする --- */
+[data-theme="plana"] .dropdown-group-header-title,
+[data-theme="plana"] div.dropdown-group-header-title[style*="rgb(0, 178, 255)"],
+[data-theme="plana"] .cv-row-wide-title {
+    background-color: #A052FF !important;
+    background: #C4BCE3 !important; /* グラデーション直塗りがあっても完全にガード */
+    color: #ffffff !important;
+}
+
+/* --- 2. 【枠線左】CVとスキルタグのボタンの「左側の線」だけを太い紫色のアクセントにする --- */
+[data-theme="plana"] .cv-grid-option,
+[data-theme="plana"] #dropTags .dropdown-option,
+[data-theme="plana"] .tag-option {
+    border-left: 3px solid #C4BCE3 !important; /* 左側だけを紫に指定 */
+}
+
+/* --- 3. 【データ背景の保護】選択肢ボタンの背景や文字が紫化するのを完全に防ぎ、元の状態（アロナ仕様）を維持 --- */
+[data-theme="plana"] #dropTags .dropdown-option:not(.selected),
+[data-theme="plana"] .tag-option:not(.selected) {
+    background-color: transparent !important; 
+    background: transparent !important;
+    color: inherit !important; /* 文字色は紫にせず、元の青系や黒のままにします */
+}
+
+/* --- 4. 【選択中】スキルタグが「選択中（アクティブ）」になった時の塗りつぶし --- */
+[data-theme="plana"] #dropTags .dropdown-option.selected,
+[data-theme="plana"] .tag-option.selected {
+    background: #A052FF !important;
+    background-color: #A052FF !important;
+    border-color: #A052FF !important;
+    color: #ffffff !important;
+}
+
+/* --- 5. 【ホバー】マウスを乗せた時の背景エフェクトを薄い紫にする --- */
+[data-theme="plana"] .cv-grid-option:hover,
+[data-theme="plana"] #dropTags .dropdown-option:hover,
+[data-theme="plana"] #dropCv .dropdown-option:hover,
+[data-theme="plana"] .tag-option:hover {
+    background: #F0E5FF !important;
+    background-color: rgba(0, 178, 255, 0.1) !important;
+    color: #FFFFFF !important;
+}
+/* ============================================================================
+   🔮 プラナモード限定：スキルタグのドロップダウンメニューの左枠線を紫色にする
+   ============================================================================ */
+
+/* プラナモード（[data-theme="plana"]）の時、
+   スキルタグ専用ドロップダウン（#dropTags）の中にあるボタンの、
+   インラインで青直塗りされた border-left を、最優先でプラナパープル（#A052FF）に上書きします */
+[data-theme="plana"] #dropTags .dropdown-option[style*="border-left"],
+[data-theme="plana"] #dropTags .dropdown-option[style*="rgb(0, 178, 255)"],
+[data-theme="plana"] #dropTags .dropdown-option {
+    border-left: 3px solid #C4BCE3 !important;
+}
+
+/* ============================================================================
+   ✨ スキルタグ & CV：選択時の反転エフェクトを「攻撃タイプ」等と完全統一するCSS
+   ============================================================================ */
+
+/* ☀️ 1. アロナモード（通常時）の設定 */
+
+/* スキルタグ（選択時）: 攻撃タイプ等のドロップダウンと同じ鮮やかな半透明の青背景に変形 */
+#dropTags .dropdown-option.selected {
+    background-color: rgba(0, 178, 255, 0.2) !important;
+    color: #00B2FF !important;           /* 攻撃タイプ等に合わせたメインの青文字 */
+    border: 1px solid #00B2FF !important; /* 四方の枠線も青に統一 */
+    border-left: 3px solid #00B2FF !important; /* 左の太線アクセントは維持 */
+}
+
+/* CVのボタン（選択時）: 同様に半透明の青背景に変形 */
+.cv-grid-option.selected {
+    background-color: rgba(0, 178, 255, 0.2) !important;
+    color: #00B2FF !important;
+    border: 1px solid #00B2FF !important;
+    border-left: 3px solid #00B2FF !important;
+}
+
+
+/* 🔮 2. プラナモード（[data-theme="plana"]）時の設定 */
+
+/* スキルタグ（選択時）: 攻撃タイプ等のドロップダウンと同じ鮮やかな半透明の紫背景に変形 */
+[data-theme="plana"] #dropTags .dropdown-option.selected {
+    background-color: rgba(160, 82, 255, 0.2) !important;
+    color: #A052FF !important;           /* プラナカラーのメインの紫文字 */
+    border: 1px solid #A052FF !important; /* 四方の枠線も紫に統一 */
+    border-left: 3px solid #A052FF !important; /* 左の太線アクセントは紫に維持 */
+}
+
+/* CVのボタン（選択時）: 同様に半透明の紫背景に変形 */
+[data-theme="plana"] .cv-grid-option.selected {
+    background-color: rgba(160, 82, 255, 0.2) !important;
+    color: #A052FF !important;
+    border: 1px solid #A052FF !important;
+    border-left: 3px solid #A052FF !important;
+}
     </style>
 </head>
 <body>

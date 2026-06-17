@@ -578,7 +578,7 @@ function buildDynamicDropdowns(students) {
                     padding: 8px 12px !important;
                     font-size: 13px !important;
                     color: #ffffff !important;
-                    background-color: #00B2FF !important;
+                    background-color: #00B2FF ;
                     margin-top: 8px !important;
                     margin-bottom: 4px !important;
                     border-radius: 4px !important;
@@ -599,7 +599,7 @@ function buildDynamicDropdowns(students) {
                     div.className = 'dropdown-option';
                     div.style.cssText = `
                         padding: 6px 4px !important;
-                        border-left: 3px solid #00B2FF !important;
+                        border-left: 3px solid #00B2FF ;
                         box-sizing: border-box !important;
                         font-size: 12px !important;
                         text-align: center !important;
