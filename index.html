@@ -1333,6 +1333,112 @@
     z-index: 10;
     cursor: pointer;
 }
+/* ドロップダウンがアクティブ（開いている）時だけグリッドを表示 */
+.skill-tag-dropdown.active .skill-tag-content {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 4px !important;
+    width: 100% !important;
+}
+
+/* それ以外（閉じている時）は非表示にする */
+.skill-tag-dropdown .skill-tag-content {
+    display: none !important;
+}
+
+/* 見出しのスタイル */
+.skill-tag-dropdown.active .dropdown-group-header-title {
+    grid-column: span 5 !important;
+    display: block !important;
+}
+/* バッジ表示領域が5列目を超えたら折り返す設定 */
+.dropdown-button {
+    display: flex !important;
+    flex-wrap: wrap !important; /* 🌟 これがないと右にはみ出します */
+    align-items: center !important;
+    gap: 4px !important;
+    height: auto !important; /* 🌟 高さを可変にするために必須 */
+    min-height: 30px !important; /* 初期表示時の高さを確保 */
+    padding: 4px !important;
+}
+
+/* バッジ自体のスタイル（折り返し時に崩れないようにする） */
+.selected-badge {
+    flex-shrink: 0 !important; /* バッジが小さく潰れないようにする */
+}
+/* ====================================================================
+   詳細検索エリア ドロップダウン手前オーバーラップ配置（完全確定版）
+   ==================================================================== */
+
+/* 1. 🌟ドロップダウン全体の親要素が所属する行の並び（グリッド）の重なり順をリセット */
+.search-grid {
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+/* 2. 通常ドロップダウン・スキルタグ共通：詳細エリアや生徒一覧の手前に完全にオーバーラップさせる */
+.custom-dropdown .dropdown-content,
+.skill-tag-dropdown .skill-tag-content {
+    position: absolute !important; /* 絶対配置にして、検索エリアの幅や高さを絶対に押し広げない */
+    top: 100% !important;
+    left: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    z-index: 999999 !important; /* 最前面の数値を指定し、詳細エリアや生徒一覧、他のボタンより確実に手前に出す */
+    background: #ffffff !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important; /* 手前に浮いている立体感を出す影 */
+    border: 1px solid #00B2FF !important;
+    border-radius: 6px !important;
+    margin-top: 5px !important;
+    
+    /* 展開時に画面外に突き抜けないよう、高さ制限とスクロールを設定 */
+    max-height: 380px !important; 
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+}
+
+/* 3. 🌟開いているドロップダウンのボタン枠（親要素）自体を最前面へ引き上げ、下の行の裏に潜り込むのを物理的に防ぐ */
+.custom-dropdown.open,
+.custom-dropdown.active,
+.skill-tag-dropdown.open,
+.skill-tag-dropdown.active {
+    position: relative !important;
+    z-index: 1000000 !important; /* 下の行のボタンや文字、生徒一覧カードの手前に100%被さるように保証 */
+}
+
+/* 4. 通常のドロップダウンの表示条件（open または active がついた時だけ手前に展開） */
+.custom-dropdown.open .dropdown-content,
+.custom-dropdown.active .dropdown-content {
+    display: block !important;
+}
+
+/* 5. スキルタグドロップダウンは、元の5列グリッド配置のまま手前に浮かせ、中身が真っ白になるのを防ぐ */
+#dropTags.open .skill-tag-content,
+#dropTags.active .skill-tag-content,
+.skill-tag-dropdown.open .skill-tag-content,
+.skill-tag-dropdown.active .skill-tag-content {
+    display: grid !important; 
+}
+
+/* 6. JS側で「非表示命令 (display: none)」が明示的に付与された場合は、優先して確実に閉じる */
+.custom-dropdown [style*="display: none"],
+.skill-tag-dropdown [style*="display: none"],
+.custom-dropdown [style*="display:none"],
+.skill-tag-dropdown [style*="display:none"] {
+    display: none !important;
+}
+
+/* 7. スキルタグリスト内をスクロールした際、検索窓と分類アイコンボタンを最上部にピッタリ固定 */
+#dropTags .tag-search-container {
+    position: sticky !important;
+    top: 0 !important;
+    background-color: #ffffff !important;
+    z-index: 1000010 !important;
+    margin-top: 0 !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+}
+
     </style>
 </head>
 <body>
@@ -1613,5 +1719,346 @@
 
 <script src="data.js"></script>
 <script src="db.js"></script>
+
+<script>
+(function() {
+    // 🌟 全てのドロップダウンの背景を「元の透過（半透明）バージョン」に戻し、各モードの背景と綺麗に調和させます
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* 1. スキルタグの親要素の配置ルール */
+        .skill-tag-dropdown, #dropTags {
+            position: relative !important;
+            display: inline-block;
+            width: 100%;
+        }
+        /* 2. スキルタグリスト：横幅1.5倍、元の美しい半透明背景へ戻す */
+        .skill-tag-dropdown .skill-tag-content, #dropTags .skill-tag-content {
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            width: 150% !important;
+            min-width: 150% !important;
+            z-index: 999999 !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            color: var(--text-main, #2C3E50) !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+            border: 1px solid rgba(0, 178, 255, 0.3) !important;
+            border-radius: 6px !important;
+            margin-top: 4px !important;
+            max-height: 400px !important;
+            overflow-y: auto !important;
+            box-sizing: border-box !important;
+        }
+        /* 3. 開いているドロップダウンのボタン親枠の立体優先度 */
+        .skill-tag-dropdown.active, #dropTags.active {
+            z-index: 1000000 !important;
+        }
+        /* 4. スキルタグ内の検索窓固定エリアの背景も半透明化に同期 */
+        #dropTags .tag-search-container {
+            position: sticky !important;
+            top: 0 !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(5px) !important;
+            z-index: 1000010 !important;
+            margin-top: 0 !important;
+            padding: 8px !important;
+            box-sizing: border-box !important;
+        }
+        /* 5. 通常の全ドロップダウンリストも透過デザインに統一 */
+        .custom-dropdown .dropdown-content,
+        .custom-dropdown [id^="drop"] {
+            position: absolute !important;
+            z-index: 999999 !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            color: var(--text-main, #2C3E50) !important;
+            border: 1px solid rgba(0, 178, 255, 0.2) !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+        }
+        /* 各ドロップダウン内のオプション文字色・ホバー挙動 */
+        .dropdown-option {
+            color: var(--text-main, #2C3E50) !important;
+            background-color: transparent;
+        }
+        .dropdown-option:hover {
+            background-color: rgba(0, 178, 255, 0.1) !important;
+        }
+        /* プラナモード（ダークテーマ）適用時の半透明背景の上書き定義 */
+        [data-theme="plana"] .skill-tag-dropdown .skill-tag-content,
+        [data-theme="plana"] #dropTags .skill-tag-content,
+        [data-theme="plana"] #dropTags .tag-search-container,
+        [data-theme="plana"] .custom-dropdown .dropdown-content,
+        [data-theme="plana"] .custom-dropdown [id^="drop"] {
+            background: rgba(26, 26, 36, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(163, 161, 247, 0.4) !important;
+            color: #F1F5F9 !important;
+        }
+        [data-theme="plana"] .tag-search-input {
+            background: #1A1A24 !important;
+            color: #FFFFFF !important;
+            border: 1px solid rgba(163, 161, 247, 0.3) !important;
+        }
+    `;
+    document.head.appendChild(style);
+
+    const attachSearchFeature = () => {
+        const dropTagsEl = document.getElementById('dropTags');
+        if (!dropTagsEl) return;
+
+        const content = dropTagsEl.querySelector('.skill-tag-content') || dropTagsEl.querySelector('.dropdown-content');
+        if (!content) return;
+
+        if (dropTagsEl.querySelector('.tag-search-container')) return;
+
+        // --- 固定ヘッダー全体の容器を作成 ---
+        const container = document.createElement('div');
+        container.className = 'tag-search-container';
+        container.style.cssText = `
+            grid-column: span 5 !important;
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 6px !important;
+            border-bottom: 1px solid rgba(0, 178, 255, 0.2) !important;
+            padding-bottom: 8px !important;
+            margin-bottom: 8px !important;
+        `;
+
+        // --- 🔍 検索ボックスの生成 ---
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'tag-search-input';
+        searchInput.placeholder = 'タグを検索...';
+        searchInput.style.cssText = `
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 8px 12px !important;
+            border: 1px solid rgba(0, 178, 255, 0.3) !important;
+            border-radius: 4px !important;
+            font-size: 13px !important;
+            background: #ffffff;
+            color: var(--text-main, #2C3E50) !important;
+        `;
+        searchInput.onclick = function(e) { e.stopPropagation(); };
+        container.appendChild(searchInput);
+
+        // --- 🔘 アイコンボタン用コンテナの生成 ---
+        const buttonGroup = document.createElement('div');
+        buttonGroup.style.cssText = `
+            display: flex !important;
+            gap: 4px !important;
+            width: 100% !important;
+            overflow-x: auto !important;
+            padding: 2px 0 !important;
+            align-items: center !important;
+        `;
+        buttonGroup.onclick = function(e) { e.stopPropagation(); };
+        container.appendChild(buttonGroup);
+
+        // --- 検索＆絞り込みのコアロジック ---
+        let activeFilterBunrui = null;
+
+        const filterTags = () => {
+            const filterText = searchInput.value.trim().toLowerCase();
+            const headers = content.querySelectorAll('.dropdown-group-header-title');
+
+            headers.forEach(header => {
+                const bunruiName = header.innerText.replace(/[【】]/g, '').trim();
+                let next = header.nextElementSibling;
+                let hasVisibleOption = false;
+
+                while (next && !next.classList.contains('dropdown-group-header-title')) {
+                    if (next.classList.contains('dropdown-option')) {
+                        const optText = next.innerText.toLowerCase();
+                        const matchesSearch = optText.includes(filterText);
+                        const matchesBunrui = !activeFilterBunrui || bunruiName === activeFilterBunrui;
+
+                        if (matchesSearch && matchesBunrui) {
+                            next.style.setProperty('display', 'block', 'important');
+                            hasVisibleOption = true;
+                        } else {
+                            next.style.setProperty('display', 'none', 'important');
+                        }
+                    }
+                    next = next.nextElementSibling;
+                }
+
+                if (activeFilterBunrui) {
+                    header.style.setProperty('display', (bunruiName === activeFilterBunrui && hasVisibleOption) ? 'block' : 'none', 'important');
+                } else {
+                    header.style.setProperty('display', (hasVisibleOption || filterText === '') ? 'block' : 'none', 'important');
+                }
+            });
+        };
+
+        // --- ボタンの動的生成 ---
+        const headers = content.querySelectorAll('.dropdown-group-header-title');
+        
+        // 🔄 リセットボタン
+        const resetBtn = document.createElement('button');
+        resetBtn.innerText = "🔄";
+        resetBtn.title = "すべての分類を表示";
+        resetBtn.style.cssText = `
+            width: 32px !important;
+            height: 32px !important;
+            padding: 0 !important;
+            border: 1px solid rgba(0, 178, 255, 0.3) !important;
+            background-color: rgba(0, 178, 255, 0.1) !important;
+            color: var(--text-main, #2C3E50) !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            font-size: 14px !important;
+            flex-shrink: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.2s !important;
+        `;
+        resetBtn.addEventListener('click', () => {
+            activeFilterBunrui = null;
+            buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', 'rgba(0, 178, 255, 0.1)', 'important'));
+            resetBtn.style.setProperty('background-color', 'rgba(0, 178, 255, 0.25)', 'important');
+            filterTags();
+        });
+        buttonGroup.appendChild(resetBtn);
+
+        // 各分類の画像ボタンを生成
+        headers.forEach(header => {
+            const bunruiName = header.innerText.replace(/[【】]/g, '').trim();
+
+            const btn = document.createElement('button');
+            btn.title = `「${bunruiName}」に絞り込み`;
+            btn.style.cssText = `
+                width: 32px !important;
+                height: 32px !important;
+                padding: 3px !important;
+                border: 1px solid rgba(0, 178, 255, 0.3) !important;
+                background-color: rgba(0, 178, 255, 0.1) !important;
+                border-radius: 4px !important;
+                cursor: pointer !important;
+                flex-shrink: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                box-sizing: border-box !important;
+                transition: all 0.2s !important;
+            `;
+
+            const img = document.createElement('img');
+            img.src = `icons/${bunruiName}.png`;
+            img.alt = bunruiName;
+            
+            img.onerror = function() {
+                this.style.display = 'none';
+                btn.innerText = bunruiName.substring(0, 2);
+                btn.style.fontSize = '11px';
+                btn.style.fontWeight = 'bold';
+                btn.style.setProperty('color', 'var(--text-main, #2C3E50)', 'important');
+            };
+
+            img.style.cssText = `
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain !important;
+                pointer-events: none !important;
+            `;
+            btn.appendChild(img);
+
+            btn.addEventListener('click', () => {
+                if (activeFilterBunrui === bunruiName) {
+                    activeFilterBunrui = null;
+                    btn.style.setProperty('background-color', 'rgba(0, 178, 255, 0.1)', 'important');
+                    resetBtn.style.setProperty('background-color', 'rgba(0, 178, 255, 0.25)', 'important');
+                } else {
+                    activeFilterBunrui = bunruiName;
+                    buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', 'rgba(0, 178, 255, 0.1)', 'important'));
+                    btn.style.setProperty('background-color', '#00B2FF', 'important');
+                }
+                filterTags();
+            });
+
+            buttonGroup.appendChild(btn);
+
+            header.style.setProperty('pointer-events', 'auto', 'important');
+            header.style.setProperty('cursor', 'pointer', 'important');
+            header.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const targetOptions = [];
+                let next = this.nextElementSibling;
+                while (next && !next.classList.contains('dropdown-group-header-title')) {
+                    if (next.classList.contains('dropdown-option')) targetOptions.push(next);
+                    next = next.nextElementSibling;
+                }
+                if (targetOptions.length === 0) return;
+                const allSelected = targetOptions.every(opt => opt.classList.contains('selected'));
+                targetOptions.forEach(opt => {
+                    const isSelected = opt.classList.contains('selected');
+                    if (allSelected ? isSelected : !isSelected) opt.click();
+                });
+            });
+        });
+
+        searchInput.addEventListener('input', filterTags);
+        content.insertBefore(container, content.firstChild);
+
+        // --- 6. 閉じた時のリセット処理 (MutationObserver) ---
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    if (!dropTagsEl.classList.contains('active')) {
+                        searchInput.value = '';
+                        activeFilterBunrui = null;
+                        buttonGroup.querySelectorAll('button').forEach(b => b.style.setProperty('background-color', 'rgba(0, 178, 255, 0.1)', 'important'));
+                        resetBtn.style.setProperty('background-color', 'rgba(0, 178, 255, 0.25)', 'important');
+                        content.querySelectorAll('.dropdown-option, .dropdown-group-header-title').forEach(el => {
+                            el.style.removeProperty('display'); 
+                        });
+                    }
+                }
+            });
+        });
+        observer.observe(dropTagsEl, { attributes: true });
+    };
+
+    // 🌟【外側クリック完全修正】画面外をクリックした時にすべてのドロップダウンを確実に閉じるグローバルキャプチャイベント
+    document.addEventListener('click', function(e) {
+        // 詳細検索エリアの通常ドロップダウン、およびスキルタグドロップダウンを両方取得
+        const allDropdowns = document.querySelectorAll('.custom-dropdown, .skill-tag-dropdown, #dropTags');
+        
+        allDropdowns.forEach(dropdown => {
+            // クリックされたターゲットがドロップダウン自身、またはその内部のコンテンツでない場合
+            if (!dropdown.contains(e.target)) {
+                // クラスを外して閉じる処理を実行
+                dropdown.classList.remove('open', 'active');
+                
+                // db.js側のトグル処理（display: block / inlineスタイル）の干渉を確実に上書きして非表示化
+                const content = dropdown.querySelector('.dropdown-content') || dropdown.querySelector('.skill-tag-content');
+                if (content) {
+                    content.style.display = 'none';
+                }
+            }
+        });
+    }, true); // 第3引数をtrue（キャプチャリングモード）にすることで、db.js等の各種内側イベントに邪魔されず最優先で外側クリックを拾い上げます
+
+    const originalBuildDropdowns = window.buildDynamicDropdowns;
+    if (typeof originalBuildDropdowns === 'function') {
+        window.buildDynamicDropdowns = function(...args) {
+            originalBuildDropdowns.apply(this, args);
+            setTimeout(attachSearchFeature, 50);
+        };
+    } else {
+        const timer = setInterval(() => {
+            const dropTagsEl = document.getElementById('dropTags');
+            if (dropTagsEl && dropTagsEl.querySelector('.dropdown-option')) {
+                attachSearchFeature();
+                clearInterval(timer);
+            }
+        }, 300);
+    }
+})();
+</script>
+
 </body>
 </html>

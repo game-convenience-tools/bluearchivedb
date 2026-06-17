@@ -294,39 +294,36 @@ function resetPageAndTrigger() {
 }
 
 function toggleDropdown(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
+    const dropdown = document.getElementById(id);
+    if (!dropdown) return;
 
-    const isOpen = el.classList.contains('open');
-    
-    // 🌟【クリア処理】他のリストを開く、または自分を閉じる前に「タグを検索」欄をリセット
-    document.querySelectorAll('.skill-tag-search-input').forEach(input => {
-        input.value = ''; // 文字を空にする
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        
-        // 非表示になっていたタグ選択肢（.dropdown-option）をすべて再表示
-        const content = input.closest('.skill-tag-content');
+    // 🌟 1. まずクリックされたドロップダウンの開閉状態を切り替える
+    dropdown.classList.toggle('active');
+
+    // スキルタグドロップダウン（dropTags）の場合は、開いた瞬間に中身を再生成させない！
+    // 既存のコードが innerHTML を書き換えてしまうのを完全にブロックします。
+    if (id === 'dropTags') {
+        // コンテンツ要素を表示状態にするだけの処理にとどめる
+        const content = dropdown.querySelector('.skill-tag-content') || dropdown.querySelector('.dropdown-content');
         if (content) {
-            content.querySelectorAll('.dropdown-option').forEach(opt => {
-                opt.classList.remove('hide');
-            });
+            // 他のドロップダウンが関与して消されないよう表示スタイルを保証
+            if (dropdown.classList.contains('active')) {
+                content.style.display = 'flex';
+            } else {
+                content.style.display = 'none';
+            }
+        }
+    }
+
+    // 🌟 2. 他のドロップダウンが開いていたら閉じる（既存の親切設計を維持）
+    const allDropdowns = document.querySelectorAll('.custom-dropdown, .skill-tag-dropdown');
+    allDropdowns.forEach(dd => {
+        if (dd.id !== id) {
+            dd.classList.remove('active');
+            const c = dd.querySelector('.dropdown-content') || dd.querySelector('.skill-tag-content');
+            if (c) c.style.display = 'none';
         }
     });
-    
-    // 他のすべてのドロップダウン（共通クラス、および新しいスキルタグ専用クラス）を一旦すべて閉じます
-    document.querySelectorAll('.custom-dropdown, .skill-tag-dropdown').forEach(d => {
-        d.classList.remove('open');
-    });
-
-    // クリックされたドロップダウンが閉じていた場合は、open クラスを付与して展開します
-    if (!isOpen) {
-        el.classList.add('open');
-        // 利便性のため、開いたドロップダウン内の検索ボックスに自動フォーカス
-        setTimeout(() => {
-            const currentInput = el.querySelector('.skill-tag-search-input');
-            if (currentInput) currentInput.focus();
-        }, 50);
-    }
 }
 
 function parseTagsString(tagsStr) {
@@ -387,97 +384,267 @@ function getCheckedValues(id) {
 // 【修正】ドロップダウン動的構築（遮蔽のリスト表示を統一）
 // ============================================================================
 function buildDynamicDropdowns(students) {
-    const schoolsSet = new Set();
-    const urbanSet = new Set();
-    const outdoorSet = new Set();
-    const indoorSet = new Set();
-    const costSet = new Set();
-
-    students.forEach(s => {
-        if (s.school && String(s.school).trim() !== '') schoolsSet.add(String(s.school).trim());
-        if (s.urban && String(s.urban).trim() !== '') urbanSet.add(String(s.urban).trim());
-        if (s.outdoor && String(s.outdoor).trim() !== '') outdoorSet.add(String(s.outdoor).trim());
-        if (s.indoor && String(s.indoor).trim() !== '') indoorSet.add(String(s.indoor).trim());
-        if (s.ex_cost !== undefined && s.ex_cost !== null) {
-            const rawCost = String(s.ex_cost).trim();
-            if (rawCost !== '' && rawCost !== '-') {
-                costSet.add(rawCost); 
-            }
+    let mBunrui = [];
+    let mTag = [];
+    try {
+        if (typeof skittagbunruiJSON !== 'undefined') {
+            mBunrui = (typeof skittagbunruiJSON === 'string') ? JSON.parse(skittagbunruiJSON) : skittagbunruiJSON;
         }
+        if (typeof skittagJSON !== 'undefined') {
+            mTag = (typeof skittagJSON === 'string') ? JSON.parse(skittagJSON) : skittagJSON;
+        }
+    } catch (e) {
+        console.error("【エラー】追加されたJSONデータの取得に失敗しました:", e);
+    }
+
+    const collectedTags = new Set();
+    students.forEach(s => {
+        ['ex_tags', 'ns_tags', 'ps_tags', 'ss_tags'].forEach(field => {
+            if (s[field]) {
+                parseTagsString(s[field]).forEach(t => {
+                    if (t && t.trim() !== "") collectedTags.add(t.trim());
+                });
+            }
+        });
     });
 
-    const stringNaturalSort = (array) => {
-        return array.sort((a, b) => {
-            return a.localeCompare(b, 'ja', { numeric: true, sensitivity: 'base' });
+    // 🌟 システムの初期化導線を維持するため、'dropTags' をここに戻しました
+    const dropdownIds = [
+        'dropSchool', 'dropType', 'dropWeapon', 'dropCover',
+        'dropRole', 'dropPos', 'dropAttack', 'dropDefense',
+        'dropExCost', 'dropUrban', 'dropOutdoor', 'dropIndoor',
+        'dropGear', 'dropTags'
+    ];
+
+    const getContentElement = (dd) => {
+        if (!dd) return null;
+        return dd.querySelector('.dropdown-content') || dd.querySelector('.skill-tag-content');
+    };
+
+    dropdownIds.forEach(id => {
+        const dd = document.getElementById(id);
+        if (!dd) return;
+        const content = getContentElement(dd);
+        if (content) content.innerHTML = '';
+    });
+
+    // 通常項目の収集
+    const schools = new Set();
+    const types = new Set();
+    const weapons = new Set();
+    const covers = new Set();
+    const roles = new Set();
+    const poss = new Set();
+    const attacks = new Set();
+    const defenses = new Set();
+    const costs = new Set();
+    const urbans = new Set();
+    const outdoors = new Set();
+    const indoors = new Set();
+    const gears = new Set();
+
+    students.forEach(s => {
+        if (s.school) schools.add(s.school);
+        if (s.type) types.add(s.type);
+        if (s.weapon) weapons.add(s.weapon);
+        if (s.cover) covers.add(s.cover);
+        if (s.role) roles.add(s.role);
+        if (s.position) poss.add(s.position);
+        if (s.attack) attacks.add(s.attack);
+        if (s.defense) defenses.add(s.defense);
+        if (s.ex_cost !== undefined && s.ex_cost !== null && s.ex_cost !== '-') costs.add(s.ex_cost);
+        if (s.urban) urbans.add(s.urban);
+        if (s.outdoor) outdoors.add(s.outdoor);
+        if (s.indoor) indoors.add(s.indoor);
+        if (s.gear1) gears.add(s.gear1);
+        if (s.gear2) gears.add(s.gear2);
+        if (s.gear3) gears.add(s.gear3);
+    });
+
+    const populate = (id, set, isCover = false) => {
+        // 🌟【最重要修正】古い平坦なリストを作るpopulate処理が、'dropTags'に対して動くのをここで完全にブロックします！
+        if (id === 'dropTags') return;
+
+        const dd = document.getElementById(id);
+        if (!dd) return;
+        const content = getContentElement(dd);
+        if (!content) return;
+        
+        let list = Array.from(set).sort();
+        if (id === 'dropExCost') {
+            list.sort((a, b) => Number(a) - Number(b));
+        }
+
+        list.forEach(val => {
+            const div = document.createElement('div');
+            div.className = 'dropdown-option';
+            if (isCover) {
+                if (val === '○') {
+                    div.innerText = '○: 利用する';
+                    div.setAttribute('data-value', '○');
+                } else if (val === '×') {
+                    div.innerText = '×: 利用しない';
+                    div.setAttribute('data-value', '×');
+                } else {
+                    div.innerText = val;
+                }
+            } else {
+                div.innerText = val;
+            }
+            div.onclick = function() { toggleOptionSelect(this, id); };
+            content.appendChild(div);
         });
     };
 
-    const schoolsArray = stringNaturalSort(Array.from(schoolsSet));
-    const urbanArray = stringNaturalSort(Array.from(urbanSet));
-    const outdoorArray = stringNaturalSort(Array.from(outdoorSet));
-    const indoorArray = stringNaturalSort(Array.from(indoorSet));
-    const costArray = stringNaturalSort(Array.from(costSet));
+    populate('dropSchool', schools);
+    populate('dropType', types);
+    populate('dropWeapon', weapons);
+    populate('dropCover', covers, true);
+    populate('dropRole', roles);
+    populate('dropPos', poss);
+    populate('dropAttack', attacks);
+    populate('dropDefense', defenses);
+    populate('dropExCost', costs);
+    populate('dropUrban', urbans);
+    populate('dropOutdoor', outdoors);
+    populate('dropIndoor', indoors);
+    populate('dropGear', gears);
 
-    const configs = [
-        { id: 'dropSchool', data: schoolsArray },
-        { id: 'dropUrban', data: urbanArray },
-        { id: 'dropOutdoor', data: outdoorArray },
-        { id: 'dropIndoor', data: indoorArray },
-        { id: 'dropExCost', data: costArray }
-    ];
+    // 🌟 新しいグループ化スキルタグ（dropTags）の生成処理
+    const dropTagsEl = document.getElementById('dropTags');
+    if (dropTagsEl) {
+        const content = getContentElement(dropTagsEl);
+        if (content) {
+            // 5列グリッドレイアウトの適用
+            content.style.display = 'grid';
+            content.style.gridTemplateColumns = 'repeat(5, 1fr)';
+            content.style.gap = '4px';
+            content.style.width = '100%';
 
-    configs.forEach(config => {
-        const dropdown = document.getElementById(config.id);
-        if (!dropdown) return;
-        const content = dropdown.querySelector('.dropdown-content');
-        if (!content) return;
-        content.innerHTML = '';
-        config.data.forEach(val => {
-            const div = document.createElement('div');
-            div.className = 'dropdown-option';
-            div.textContent = val; 
-            div.setAttribute('onclick', `toggleOptionSelect(this, '${config.id}')`);
-            content.appendChild(div);
-        });
-    });
+            const groupedData = {};
+            const unclassifiedTags = new Set();
 
-    const costContent = document.getElementById('dropExCostContent');
-    if (costContent) {
-        costContent.innerHTML = '';
-        costArray.forEach(val => {
-            const div = document.createElement('div');
-            div.className = 'dropdown-option';
-            div.textContent = `COST ${val}`;
-            div.setAttribute('data-value', val);
-            div.setAttribute('onclick', `toggleOptionSelect(this, 'dropExCost')`);
-            costContent.appendChild(div);
-        });
-    }
+            collectedTags.forEach(tag => {
+                let cleanTag = String(tag).trim();
+                if (cleanTag === "通所攻撃強化") cleanTag = "通常攻撃強化";
+                let tagInfo = mTag.find(item => String(item.skil_tag).trim() === cleanTag);
+                
+                if (!tagInfo) {
+                    const normalizedTag = cleanTag.replace(/[Ａ-Ｚａ-ｚ]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase();
+                    tagInfo = mTag.find(item => {
+                        const mTagNorm = String(item.skil_tag).trim().replace(/[Ａ-Ｚａ-ｚ]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase();
+                        return mTagNorm === normalizedTag;
+                    });
+                }
+                
+                if (tagInfo && tagInfo.skil_tag_bunrui) {
+                    const bunruiName = tagInfo.skil_tag_bunrui;
+                    const bunruiInfo = mBunrui.find(b => String(b.skil_tag_bunrui).trim() === String(bunruiName).trim());
+                    const bSortNo = bunruiInfo ? parseInt(bunruiInfo.sort_no, 10) : 9999;
 
-    // 🌟【重要】遮蔽のドロップダウン（dropCover）の選択肢を「〇:利用する」「×:利用しない」に完全に固定
-    const coverDropdown = document.getElementById('dropCover');
-    if (coverDropdown) {
-        const coverContent = coverDropdown.querySelector('.dropdown-content') || document.getElementById('dropCoverContent');
-        if (coverContent) {
-            coverContent.innerHTML = ''; // 一旦初期化
-            
-            // 「〇:利用する」の選択肢（内部データ値としては "○" または "〇" の両方に対応させます）
-            const optYes = document.createElement('div');
-            optYes.className = 'dropdown-option';
-            optYes.textContent = '〇:利用する';
-            optYes.setAttribute('data-value', '○'); // データ側の「○」と一致させる
-            optYes.setAttribute('onclick', "toggleOptionSelect(this, 'dropCover')");
-            coverContent.appendChild(optYes);
+                    if (!groupedData[bunruiName]) {
+                        groupedData[bunruiName] = { sort_no: bSortNo, tags: [] }; // 🌟 SetからArray(配列)に変更
+                    }
+                    // 🌟 skil_tag の sort_no を数値として取得（設定がなければ9999）
+        const tSortNo = tagInfo.sort_no !== undefined && tagInfo.sort_no !== null ? parseInt(tagInfo.sort_no, 10) : 9999;
+        
+        // タグ名と個別ソート番号をオブジェクトとして格納
+        groupedData[bunruiName].tags.push({ name: tag, sort_no: tSortNo });
+                } else {
+                    unclassifiedTags.add(tag);
+                }
+            });
 
-            // 「×:利用しない」の選択肢
-            const optNo = document.createElement('div');
-            optNo.className = 'dropdown-option';
-            optNo.textContent = '×:利用しない';
-            optNo.setAttribute('data-value', '×');  // データ側の「×」と一致させる
-            optNo.setAttribute('onclick', "toggleOptionSelect(this, 'dropCover')");
-            coverContent.appendChild(optNo);
+            const sortedGroups = Object.keys(groupedData).sort((a, b) => groupedData[a].sort_no - groupedData[b].sort_no);
+
+            // グループごとに出力
+            sortedGroups.forEach(bunruiName => {
+                const groupTitle = document.createElement('div');
+                groupTitle.className = 'dropdown-group-header-title'; 
+                groupTitle.style.cssText = `
+                    font-weight: bold !important;
+                    padding: 8px 12px !important;
+                    font-size: 13px !important;
+                    color: #ffffff !important;
+                    background-color: #00B2FF !important;
+                    margin-top: 8px !important;
+                    margin-bottom: 4px !important;
+                    border-radius: 4px !important;
+                    pointer-events: none !important;
+                    display: block !important;
+                    grid-column: span 5 !important;
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                `;
+                groupTitle.innerText = `【${bunruiName}】`;
+                content.appendChild(groupTitle);
+                
+                groupedData[bunruiName].tags.sort((a, b) => a.sort_no - b.sort_no);
+
+                const sortedTagsInGroup = Array.from(groupedData[bunruiName].tags).sort();
+                sortedTagsInGroup.forEach(tag => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-option';
+                    div.style.cssText = `
+                        padding: 6px 4px !important;
+                        border-left: 3px solid #00B2FF !important;
+                        box-sizing: border-box !important;
+                        font-size: 12px !important;
+                        text-align: center !important;
+                    `;
+                    div.innerText = tag.name;
+                    div.onclick = function() { toggleOptionSelect(this, 'dropTags'); };
+                    content.appendChild(div);
+                });
+            });
+
+            // 未分類タグの出力
+            if (unclassifiedTags.size > 0) {
+                const groupTitle = document.createElement('div');
+                groupTitle.className = 'dropdown-group-header-title';
+                groupTitle.style.cssText = `
+                    font-weight: bold !important;
+                    padding: 8px 12px !important;
+                    font-size: 13px !important;
+                    color: #ffffff !important;
+                    background-color: #6C7A89 !important;
+                    margin-top: 8px !important;
+                    margin-bottom: 4px !important;
+                    border-radius: 4px !important;
+                    pointer-events: none !important;
+                    display: block !important;
+                    grid-column: span 5 !important;
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                `;
+                groupTitle.innerText = '【その他・未分類】';
+                content.appendChild(groupTitle);
+
+                const sortedUnclassified = Array.from(unclassifiedTags).sort();
+                sortedUnclassified.forEach(tag => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-option';
+                    div.style.cssText = `
+                        padding: 6px 4px !important;
+                        border-left: 3px solid #6C7A89 !important;
+                        box-sizing: border-box !important;
+                        font-size: 12px !important;
+                        text-align: center !important;
+                    `;
+                    div.innerText = tag;
+                    div.onclick = function() { toggleOptionSelect(this, 'dropTags'); };
+                    content.appendChild(div);
+                });
+            }
         }
     }
+    
+    // 🌟 リスト外をクリックしたら閉じる処理（ドキュメント全体を監視）
+    document.addEventListener('click', function(e) {
+        if (dropTagsEl && !dropTagsEl.contains(e.target)) {
+            dropTagsEl.classList.remove('active');
+        }
+    });
 }
 
 // ============================================================================
@@ -489,7 +656,6 @@ function renderStudentsList(students) {
     if (!container) return;
     container.innerHTML = '';
     if (paginationWrap) paginationWrap.innerHTML = '';
-
     if (students.length === 0) {
         container.innerHTML = '<div class="status-message">該当する生徒データが見つかりません。</div>';
         return;
@@ -1625,231 +1791,7 @@ function initSkillTagOutsideClickClose() {
 }
 
 function buildSkillTagDropdownContent(students) {
-    const tagContent = document.querySelector('#dropTags .skill-tag-content');
-    if (!tagContent) return;
-
-    const tagSet = new Set();
-    students.forEach(s => {
-        if (typeof parseTagsString === 'function') {
-            parseTagsString(s.ex_tags).forEach(t => tagSet.add(t));
-            parseTagsString(s.ns_tags).forEach(t => tagSet.add(t));
-            parseTagsString(s.ps_tags).forEach(t => tagSet.add(t));
-            parseTagsString(s.ss_tags).forEach(t => tagSet.add(t));
-        }
-    });
-
-    tagContent.innerHTML = '';
-    const isPlana = document.documentElement.getAttribute('data-theme') === 'plana';
-
-    if (!document.getElementById('skill-tag-robust-style')) {
-        const styleEl = document.createElement('style');
-        styleEl.id = 'skill-tag-robust-style';
-        styleEl.innerHTML = `
-            #dropTags.open .skill-tag-content {
-                display: grid !important;
-                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-                gap: 6px !important;
-                width: 1140px !important;
-                max-width: 95vw !important;
-                box-sizing: border-box !important;
-                padding: 10px !important;
-                height: auto !important;
-                max-height: 420px !important;
-                overflow-y: auto !important;
-            }
-            #dropTags .skill-tag-content .dropdown-option {
-                margin: 0 !important;
-                text-align: center !important;
-                white-space: nowrap !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
-                box-sizing: border-box !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                padding: 6px 4px !important;
-            }
-            #dropTags .dropdown-button {
-                height: auto !important;
-                min-height: 38px !important;
-                display: flex !important;
-                align-items: center !important;
-                flex-wrap: wrap !important;
-                gap: 5px !important;
-                padding: 6px 45px 6px 12px !important;
-                position: relative !important;
-            }
-            #dropTags .dropdown-button .badge {
-                display: inline-flex !important;
-                align-items: center !important;
-                justify-content: space-between !important;
-                flex: 0 1 auto !important;
-                max-width: calc(20% - 5px) !important;
-                white-space: nowrap !important;
-                box-sizing: border-box !important;
-            }
-            #dropTags .dropdown-button .badge span {
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
-                white-space: nowrap !important;
-                display: inline-block !important;
-            }
-            #dropTags .dropdown-button .badge i.badge-remove {
-                margin-left: 4px !important;
-                cursor: pointer !important;
-                display: inline-block !important;
-            }
-            #dropTags .clear-btn {
-                position: absolute !important;
-                right: 28px !important;
-                top: 50% !important;
-                transform: translateY(-50%) !important;
-                cursor: pointer !important;
-                z-index: 3 !important;
-            }
-            #dropTags .dropdown-button > i:not(.badge-remove) {
-                position: absolute !important;
-                right: 12px !important;
-                top: 50% !important;
-                transform: translateY(-50%) !important;
-                z-index: 2 !important;
-                pointer-events: none !important;
-            }
-        `;
-        document.head.appendChild(styleEl);
-    }
-
-    const searchWrapper = document.createElement('div');
-    searchWrapper.style.setProperty('position', 'sticky', 'important');
-    searchWrapper.style.setProperty('top', '0', 'important');
-    searchWrapper.style.setProperty('background', isPlana ? '#222232' : '#ffffff', 'important');
-    searchWrapper.style.setProperty('padding', '4px 0 8px 0', 'important');
-    searchWrapper.style.setProperty('margin-bottom', '4px', 'important');
-    searchWrapper.style.setProperty('border-bottom', isPlana ? '1px solid rgba(163, 161, 247, 0.25)' : '1px solid rgba(0, 178, 255, 0.2)', 'important');
-    searchWrapper.style.setProperty('z-index', '10', 'important');
-    searchWrapper.style.setProperty('grid-column', 'span 5', 'important');
-
-    const tagSearchInput = document.createElement('input');
-    tagSearchInput.type = 'text';
-    tagSearchInput.className = 'skill-tag-search-input';
-    tagSearchInput.placeholder = 'タグを検索...';
-    tagSearchInput.style.width = '100%';
-    tagSearchInput.style.padding = '5px 8px';
-    tagSearchInput.style.fontSize = '12px';
-    tagSearchInput.style.border = isPlana ? '1px solid rgba(163, 161, 247, 0.3)' : '1px solid rgba(0, 178, 255, 0.2)';
-    tagSearchInput.style.borderRadius = '4px';
-    tagSearchInput.style.outline = 'none';
-    tagSearchInput.style.background = isPlana ? '#1a1a26' : '#ffffff';
-    tagSearchInput.style.color = isPlana ? '#ffffff' : '#2C3E50';
-    tagSearchInput.style.boxSizing = 'border-box';
-
-    searchWrapper.appendChild(tagSearchInput);
-    tagContent.appendChild(searchWrapper);
-
-    function refreshSelectedSkillBadges() {
-        const wrapper = document.querySelector('#dropTags');
-        const button = wrapper ? wrapper.querySelector('.dropdown-button') : null;
-        if (!button) return;
-
-        const selectedOptions = Array.from(tagContent.querySelectorAll('.dropdown-option.selected'));
-        const checkedTags = selectedOptions.map(opt => opt.getAttribute('data-value') || opt.textContent.trim());
-
-        if (typeof badgeSelectedFilters !== 'undefined') {
-            badgeSelectedFilters['dropTags'] = checkedTags;
-        }
-
-        button.innerHTML = '';
-
-        const oldClearBtn = wrapper.querySelector('.clear-btn');
-        if (oldClearBtn) oldClearBtn.remove();
-
-        if (checkedTags.length === 0) {
-            button.textContent = '選択してください';
-            const arrow = document.createElement('i');
-            arrow.className = 'fas fa-chevron-down';
-            button.appendChild(arrow);
-        } else {
-            checkedTags.forEach(tag => {
-                const badgeSpan = document.createElement('span');
-                badgeSpan.className = 'badge selected-badge';
-                
-                const textSpan = document.createElement('span');
-                textSpan.textContent = tag;
-                badgeSpan.appendChild(textSpan);
-
-                const removeIcon = document.createElement('i');
-                removeIcon.className = 'fas fa-times badge-remove';
-                removeIcon.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const targetOpt = Array.from(tagContent.querySelectorAll('.dropdown-option')).find(opt => (opt.getAttribute('data-value') || opt.textContent.trim()) === tag);
-                    if (targetOpt) targetOpt.classList.remove('selected');
-                    refreshSelectedSkillBadges();
-                });
-                badgeSpan.appendChild(removeIcon);
-                
-                button.appendChild(badgeSpan);
-            });
-
-            const arrow = document.createElement('i');
-            arrow.className = 'fas fa-chevron-down';
-            button.appendChild(arrow);
-
-            const clearBtn = document.createElement('i');
-            clearBtn.className = 'fas fa-times-circle clear-btn';
-            clearBtn.title = '選択をすべてクリア';
-            clearBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                tagContent.querySelectorAll('.dropdown-option.selected').forEach(opt => opt.classList.remove('selected'));
-                refreshSelectedSkillBadges();
-            });
-            wrapper.appendChild(clearBtn);
-        }
-
-        if (typeof currentPage !== 'undefined') currentPage = 1;
-        if (typeof filterStudentsTrigger === 'function') filterStudentsTrigger();
-    }
-
-    Array.from(tagSet).sort().forEach(tag => {
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'dropdown-option'; 
-        optionDiv.textContent = tag;
-        optionDiv.setAttribute('data-value', tag);
-
-        if (typeof badgeSelectedFilters !== 'undefined' && badgeSelectedFilters['dropTags'] && badgeSelectedFilters['dropTags'].includes(tag)) {
-            optionDiv.classList.add('selected');
-        }
-
-        optionDiv.addEventListener('click', function(e) {
-            e.stopPropagation();
-            this.classList.toggle('selected');
-            refreshSelectedSkillBadges();
-        });
-
-        tagContent.appendChild(optionDiv);
-    });
-
-    // ============================================================================
-    // 【修正】スキルタグ検索（部分一致で正しく絞り込めるように修正）
-    // ============================================================================
-    tagSearchInput.addEventListener('input', () => {
-        const val = tagSearchInput.value.toLowerCase().trim();
-        const options = tagContent.querySelectorAll('.dropdown-option');
-    
-        options.forEach(opt => {
-            // オプション内のテキストを取得
-            const txt = opt.textContent.toLowerCase();
-        
-            // 空白（未入力）の場合はすべて表示、入力がある場合は部分一致（includes）で判定
-            if (val === "" || txt.includes(val)) {
-                opt.style.setProperty('display', 'flex', 'important');
-            } else {
-                // 🌟 修正ポイント: 第一引数に 'display' を正しく指定して非表示（none）にします
-                opt.style.setProperty('display', 'none', 'important');
-            }
-        });
-    });
-
-    refreshSelectedSkillBadges();
+    return;
 }
 
 // ============================================================================
