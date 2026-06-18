@@ -406,12 +406,11 @@ function buildDynamicDropdowns(students) {
         });
     });
     
-    
-    // 🌟 システムの初期化導線を維持するため、'dropTags' をここに戻しました
+    // 🌟 システムの初期化導線を維持するため、'dropTags' をここに保持
     const dropdownIds = [
         'dropSchool', 'dropType', 'dropWeapon', 'dropCover',
         'dropRole', 'dropPos', 'dropAttack', 'dropDefense',
-        'dropExCost', 'dropUrban', 'dropOutdoor', 'dropIndoor',
+        'dropExCost',
         'dropGear', 'dropTags'
     ];
 
@@ -441,10 +440,71 @@ function buildDynamicDropdowns(students) {
     const attacks = new Set();
     const defenses = new Set();
     const costs = new Set();
-    const urbans = new Set();
-    const outdoors = new Set();
-    const indoors = new Set();
     const gears = new Set();
+    
+    // ここに書いていないものがあった場合は後ろに追加される
+    schools.add("アビドス");
+    schools.add("トリニティ");
+    schools.add("ゲヘナ");
+    schools.add("ミレニアム");
+    schools.add("百鬼夜行");
+    schools.add("レッドウィンター");
+    schools.add("山海経");
+    schools.add("ヴァルキューレ");
+    schools.add("SRT");
+    schools.add("アリウス");
+    schools.add("ハイランダー");
+    schools.add("ワイルドハント");
+    
+    types.add("STRIKER");
+    types.add("SPECIAL");
+    
+    weapons.add("SG");
+    weapons.add("SMG");
+    weapons.add("AR");
+    weapons.add("GL");
+    weapons.add("HG");
+    weapons.add("RL");
+    weapons.add("SR");
+    weapons.add("RG");
+    weapons.add("MG");
+    weapons.add("MT");
+    weapons.add("FT");
+    
+    covers.add("○");
+    covers.add("×");
+    
+    roles.add("タンク");
+    roles.add("アタッカー");
+    roles.add("ヒーラー");
+    roles.add("サポーター");
+    roles.add("T.S");
+    
+    poss.add("FRONT");
+    poss.add("MIDDLE");
+    poss.add("BACK");
+    
+    attacks.add("爆発");
+    attacks.add("貫通");
+    attacks.add("神秘");
+    attacks.add("振動");
+    attacks.add("分解");
+    
+    defenses.add("軽装備");
+    defenses.add("重装甲");
+    defenses.add("特殊装甲");
+    defenses.add("弾力装甲");
+    defenses.add("複合装甲");
+    
+    gears.add("ネックレス");
+    gears.add("腕時計");
+    gears.add("お守り");
+    gears.add("ヘアピン");
+    gears.add("バッジ");
+    gears.add("バッグ");
+    gears.add("シューズ");
+    gears.add("グローブ");
+    gears.add("帽子");
 
     students.forEach(s => {
         if (s.school) schools.add(s.school);
@@ -457,9 +517,6 @@ function buildDynamicDropdowns(students) {
         if (s.attack) attacks.add(s.attack);
         if (s.defense) defenses.add(s.defense);
         if (s.ex_cost !== undefined && s.ex_cost !== null && s.ex_cost !== '-') costs.add(s.ex_cost);
-        if (s.urban) urbans.add(s.urban);
-        if (s.outdoor) outdoors.add(s.outdoor);
-        if (s.indoor) indoors.add(s.indoor);
         if (s.gear1) gears.add(s.gear1);
         if (s.gear2) gears.add(s.gear2);
         if (s.gear3) gears.add(s.gear3);
@@ -467,7 +524,7 @@ function buildDynamicDropdowns(students) {
     });
 
     const populate = (id, set, isCover = false) => {
-        // 🌟【最重要修正】古い平坦なリストを作るpopulate処理が、'dropTags'に対して動くのをここで完全にブロックします！
+        // 🌟 'dropTags' に対して動くのを完全にブロック
         if (id === 'dropTags') return;
 
         const dd = document.getElementById(id);
@@ -475,11 +532,13 @@ function buildDynamicDropdowns(students) {
         const content = getContentElement(dd);
         if (!content) return;
         
-        let list = Array.from(set).sort();
+        let list = Array.from(set);
+        
+        // 戦地適性以外は自動でソートをかける（コストは数値ソート）
         if (id === 'dropExCost') {
             list.sort((a, b) => Number(a) - Number(b));
         }
-
+        
         list.forEach(val => {
             const div = document.createElement('div');
             div.className = 'dropdown-option';
@@ -501,14 +560,13 @@ function buildDynamicDropdowns(students) {
         });
     };
 
-    // 🌟 動的追加データのソート
+    // 🌟 動的追加データのソート配列化
     let cvList = Array.from(cvs).sort();
-    
     let rangeList = Array.from(ranges).sort();
 
+    // 通常のドロップダウンを生成
     populate('dropSchool', schools);
     populate('dropType', types);
-    //populate('dropCv', cvList);
     populate('dropWeapon', weapons);
     populate('dropCover', covers, true);
     populate('dropRole', roles);
@@ -516,9 +574,8 @@ function buildDynamicDropdowns(students) {
     populate('dropAttack', attacks);
     populate('dropDefense', defenses);
     populate('dropExCost', costs);
-    populate('dropUrban', urbans);
-    populate('dropOutdoor', outdoors);
-    populate('dropIndoor', indoors);
+
+    // 残りのドロップダウン生成
     populate('dropRange', rangeList);
     populate('dropGear', gears);
 
@@ -527,7 +584,6 @@ function buildDynamicDropdowns(students) {
     if (dropTagsEl) {
         const content = getContentElement(dropTagsEl);
         if (content) {
-            // 5列グリッドレイアウトの適用
             content.style.display = 'grid';
             content.style.gridTemplateColumns = 'repeat(5, 1fr)';
             content.style.gap = '4px';
@@ -555,13 +611,11 @@ function buildDynamicDropdowns(students) {
                     const bSortNo = bunruiInfo ? parseInt(bunruiInfo.sort_no, 10) : 9999;
 
                     if (!groupedData[bunruiName]) {
-                        groupedData[bunruiName] = { sort_no: bSortNo, tags: [] }; // 🌟 SetからArray(配列)に変更
+                        groupedData[bunruiName] = { sort_no: bSortNo, tags: [] };
                     }
-                    // 🌟 skil_tag の sort_no を数値として取得（設定がなければ9999）
-        const tSortNo = tagInfo.sort_no !== undefined && tagInfo.sort_no !== null ? parseInt(tagInfo.sort_no, 10) : 9999;
-        
-        // タグ名と個別ソート番号をオブジェクトとして格納
-        groupedData[bunruiName].tags.push({ name: tag, sort_no: tSortNo });
+                    const tSortNo = tagInfo.sort_no !== undefined && tagInfo.sort_no !== null ? parseInt(tagInfo.sort_no, 10) : 9999;
+                    
+                    groupedData[bunruiName].tags.push({ name: tag, sort_no: tSortNo });
                 } else {
                     unclassifiedTags.add(tag);
                 }
@@ -569,7 +623,6 @@ function buildDynamicDropdowns(students) {
 
             const sortedGroups = Object.keys(groupedData).sort((a, b) => groupedData[a].sort_no - groupedData[b].sort_no);
 
-            // グループごとに出力
             sortedGroups.forEach(bunruiName => {
                 const groupTitle = document.createElement('div');
                 groupTitle.className = 'dropdown-group-header-title'; 
@@ -593,8 +646,7 @@ function buildDynamicDropdowns(students) {
                 
                 groupedData[bunruiName].tags.sort((a, b) => a.sort_no - b.sort_no);
 
-                const sortedTagsInGroup = Array.from(groupedData[bunruiName].tags).sort();
-                sortedTagsInGroup.forEach(tag => {
+                groupedData[bunruiName].tags.forEach(tag => {
                     const div = document.createElement('div');
                     div.className = 'dropdown-option';
                     div.style.cssText = `
@@ -610,7 +662,6 @@ function buildDynamicDropdowns(students) {
                 });
             });
 
-            // 未分類タグの出力
             if (unclassifiedTags.size > 0) {
                 const groupTitle = document.createElement('div');
                 groupTitle.className = 'dropdown-group-header-title';
@@ -651,25 +702,23 @@ function buildDynamicDropdowns(students) {
         }
     }
     
-    // 🌟 リスト外をクリックしたら閉じる処理（ドキュメント全体を監視）
     document.addEventListener('click', function(e) {
         if (dropTagsEl && !dropTagsEl.contains(e.target)) {
             dropTagsEl.classList.remove('active');
         }
     });
+
     // ============================================================================
-    // 🌟 【確定版】CVドロップダウン（dropCv）行見出しのみ ＋ 50音単位での強制改行処理
+    // 🌟 CVドロップダウン（dropCv）50音単位での強制改行処理
     // ============================================================================
     const dropCvEl = document.getElementById('dropCv');
     if (dropCvEl) {
         const content = dropCvEl.querySelector('.dropdown-content') || dropCvEl.querySelector('.skill-tag-content');
         if (content) {
-            content.innerHTML = ''; // 既存のリストをクリア
-            
+            content.innerHTML = ''; 
             content.classList.add('cv-grid-layout'); 
             content.style.boxSizing = 'border-box';
 
-            // 50音の「1文字（あ、い、う…）」を取得するヘルパー関数
             function getInitialChar(studentObj) {
                 if (!studentObj || !studentObj.cv) return 'その他';
                 const rawName = studentObj.kana || studentObj.cv_kana || studentObj.cv_yomi || studentObj.cv;
@@ -684,10 +733,9 @@ function buildDynamicDropdowns(students) {
                     char = String.fromCharCode(code - 0x0060);
                 }
                 if (/^[あ-ん]/.test(char)) return char;
-                return 'その他';
+                return 'other';
             }
 
-            // 1文字（あ、い、う）から所属する「〇〇行」のグループ名を返すマップ
             function getRowName(char) {
                 if (/^[あ-お]/.test(char)) return 'あ行';
                 if (/^[か-ご]/.test(char)) return 'か行';
@@ -703,7 +751,6 @@ function buildDynamicDropdowns(students) {
                 return 'その他';
             }
 
-            // 50音・アルファベットすべての細分化された順序リスト
             const charOrder = [
                 'あ','い','う','え','お',
                 'か','が','き','ぎ','く','ぐ','け','げ','こ','ご',
@@ -715,10 +762,9 @@ function buildDynamicDropdowns(students) {
                 'や','ゆ','よ',
                 'ら','り','る','れ','ろ',
                 'わ','を','ん',
-                'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','その他'
+                'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','other'
             ];
 
-            // 50音1文字ごとの声優リストをあらかじめ作成
             const cvGroupsByChar = {};
             const processedCvs = new Set();
 
@@ -730,27 +776,21 @@ function buildDynamicDropdowns(students) {
                 processedCvs.add(s.cv);
             });
 
-            // すでに描画した「行見出し（あ行、か行など）」を追跡するSet
             const renderedRows = new Set();
 
-            // すべての50音文字を順番にループ処理
             charOrder.forEach(char => {
                 const cvListForChar = cvGroupsByChar[char];
                 if (!cvListForChar || cvListForChar.length === 0) return;
 
-                // 🌟 その文字が所属する「行名（あ行など）」を取得
                 const rowName = getRowName(char);
 
-                // まだその「行（例：あ行）」の大きな青い帯を描画していない場合は、ここで初めて描画する
                 if (!renderedRows.has(rowName)) {
                     const rowTitle = document.createElement('div');
                     rowTitle.className = 'cv-row-wide-title'; 
                     rowTitle.innerText = `【${rowName}】`;
                     content.appendChild(rowTitle);
-                    renderedRows.add(rowName); // 描画済みリストに記録
+                    renderedRows.add(rowName);
                 } else {
-                    // 🌟 既に同じ「行」の帯があるが、50音（例：「あ」から「い」）が変わるタイミングの処理
-                    // ラベル（【い】など）は消しつつ、絶対に文字の終わりと始まりを詰めないための「透明な改行ブロック」を挟む
                     const lineBreaker = document.createElement('div');
                     lineBreaker.style.cssText = `
                         grid-column: span 3 !important; 
@@ -760,7 +800,6 @@ function buildDynamicDropdowns(students) {
                     content.appendChild(lineBreaker);
                 }
 
-                // その文字（例：「い」）に所属する声優名を3列グリッドに流し込む
                 cvListForChar.sort().forEach(cvName => {
                     const div = document.createElement('div');
                     div.className = 'dropdown-option cv-grid-option';
@@ -768,12 +807,8 @@ function buildDynamicDropdowns(students) {
                     div.title = cvName;
                     
                     div.onclick = function(e) { 
-                        e.stopPropagation(); // 誤作動（外側クリックイベントの誘発）を完全に防止
-                        
-                        // 🌟 既存の選択・解除システムを呼び出す（これだけで上部のバッジ連動や検索が走ります）
+                        e.stopPropagation();
                         toggleOptionSelect(this, 'dropCv'); 
-                        
-                        // 💡 閉じる命令（remove('active')）を撤去したため、開いたままになります
                     };
                     content.appendChild(div);
                 });
@@ -888,25 +923,29 @@ function renderStudentsList(students) {
         return escaped;
     }
     
-    // 🌟 各種フィルター項目用のハイライト関数
     function highlightFilterField(text, selectedList) {
-        if (!text || text === "-") return "-";
-        const escaped = escapeHtml(text);
-        
-        let matchFree = false;
-        if (freeKeyword && escaped.toLowerCase().includes(freeKeyword.toLowerCase())) {
-            matchFree = true;
-        }
-        
-        let matchDropdown = false;
-        if (selectedList && selectedList.length > 0) {
-            matchDropdown = selectedList.some(val => escaped.toLowerCase() === val.toLowerCase());
-        }
-        
-        if (matchFree || matchDropdown) {
-            return `<mark class="search-highlight">${escaped}</mark>`;
-        }
-        return escaped;
+    if (!text || text === "-") return "-";
+    const escaped = escapeHtml(text);
+    
+    let matchFree = false;
+    if (freeKeyword && escaped.toLowerCase().includes(freeKeyword.toLowerCase())) {
+        matchFree = true;
+    }
+    
+    let matchDropdown = false;
+    if (selectedList && selectedList.length > 0) {
+        // 🌟 修正：選択されたフィルターの文字が、対象テキストに「含まれているか」で判定（大文字小文字を無視）
+        matchDropdown = selectedList.some(val => {
+            const cleanVal = String(val).trim().toLowerCase();
+            const cleanText = String(text).trim().toLowerCase();
+            return cleanText.includes(cleanVal); // ← 完全一致から部分一致に変更
+        });
+    }
+    
+    if (matchFree || matchDropdown) {
+        return `<mark class="search-highlight">${escaped}</mark>`;
+    }
+    return escaped;
     }
 // 🌟 遮蔽用の部分一致ハイライト関数（「〇」や「×」を正しく黄色く光らせる）
     function highlightCoverField(text, selectedList) {
@@ -1787,10 +1826,29 @@ filterStudentsTrigger = function() {
             let matchCover = selCover.some(val => s.cover === val.replace("○", "").replace("×", "").replace(":", "").trim() || s.cover === val);
             if (!matchCover) return false;
         }
-        if (selUrban.length > 0 && !selUrban.some(val => s.urban === val.replace("市街:", "").trim())) return false;
-        if (selOutdoor.length > 0 && !selOutdoor.some(val => s.outdoor === val.replace("屋外:", "").trim())) return false;
-        if (selIndoor.length > 0 && !selIndoor.some(val => s.indoor === val.replace("屋内:", "").trim())) return false;
+        
+        // 既存の市街地・屋外・屋内の条件チェック処理（以下はイメージです。お手元の判定部分を書き換えてください）
+        const urbanVal = document.getElementById('dropUrban') ? document.getElementById('dropUrban').value : '';
+        const outdoorVal = document.getElementById('dropOutdoor') ? document.getElementById('dropOutdoor').value : '';
+        const indoorVal = document.getElementById('dropIndoor') ? document.getElementById('dropIndoor').value : '';
 
+        // 🏙️ 市街地・屋外・屋内ドロップダウンのマルチセレクト部分一致判定
+        if (selUrban && selUrban.length > 0) {
+            // 選択された「SS〜D」のいずれかが、生徒の適性文字列（s.urban）に含まれているか
+            let matchUrban = selUrban.some(val => s.urban && s.urban.includes(val));
+            if (!matchUrban) return false;
+        }
+
+        if (selOutdoor && selOutdoor.length > 0) {
+            let matchOutdoor = selOutdoor.some(val => s.outdoor && s.outdoor.includes(val));
+            if (!matchOutdoor) return false;
+        }
+
+        if (selIndoor && selIndoor.length > 0) {
+            let matchIndoor = selIndoor.some(val => s.indoor && s.indoor.includes(val));
+            if (!matchIndoor) return false;
+        }
+        
         if (selGear.length > 0) {
             let matchGear = selGear.some(g => s.gear1 === g || s.gear2 === g || s.gear3 === g);
             if (!matchGear) return false;
@@ -1885,17 +1943,11 @@ window.addEventListener('DOMContentLoaded', () => {
 // 学校、市街地、屋外、屋内、EXコストのドロップダウンをデータから自動抽出して再構築する関数
 function buildDynamicFiltersFromData(students) {
     const schoolsSet = new Set();
-    const urbanSet = new Set();
-    const outdoorSet = new Set();
-    const indoorSet = new Set();
     const costSet = new Set();
 
     // 全生徒データから各項目の値を重複なく抽出
     students.forEach(s => {
         if (s.school && String(s.school).trim() !== '') schoolsSet.add(String(s.school).trim());
-        if (s.urban && String(s.urban).trim() !== '') urbanSet.add(String(s.urban).trim());
-        if (s.outdoor && String(s.outdoor).trim() !== '') outdoorSet.add(String(s.outdoor).trim());
-        if (s.indoor && String(s.indoor).trim() !== '') indoorSet.add(String(s.indoor).trim());
         
         // 🌟EXコストの抽出：数値変換（Numberなど）は絶対にせず、100%純粋な「文字列」としてそのまま取得する
         if (s.ex_cost !== undefined && s.ex_cost !== null) {
