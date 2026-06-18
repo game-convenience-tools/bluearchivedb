@@ -1960,7 +1960,7 @@ function buildDynamicFiltersFromData(students) {
 
     // 各ドロップダウンIDと、抽出・ソートしたデータのマッピング
     const filterConfigs = [
-        { id: 'dropSchool', data: stringNaturalSort(Array.from(schoolsSet)) }
+        { id: 'dropSchool', data: Array.from(schoolsSet) }
     ];
 
     filterConfigs.forEach(config => {
