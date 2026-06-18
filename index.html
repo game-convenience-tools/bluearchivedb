@@ -32,7 +32,6 @@
             --ps-color: #F59E0B;
             --ss-color: #8B5CF6;
         }
-        
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -2249,7 +2248,7 @@
         
         // 🔄 リセットボタン
         const resetBtn = document.createElement('button');
-        resetBtn.innerText = "🔄";
+        //resetBtn.innerText = "🔄";
         resetBtn.title = "すべての分類を表示";
         resetBtn.style.cssText = `
             width: 32px !important;
@@ -2267,6 +2266,28 @@
             justify-content: center !important;
             transition: all 0.2s !important;
         `;
+        
+    
+        const imgReset = document.createElement('img');
+        imgReset.src = `icons/リセット.png`;
+        imgReset.alt = 'リセット';
+        
+        imgReset.onerror = function() {
+            this.style.display = 'none';
+            btn.innerText = 'リセット'.substring(0, 2);
+            btn.style.fontSize = '11px';
+            btn.style.fontWeight = 'bold';
+            btn.style.setProperty('color', 'var(--text-main, #2C3E50)', 'important');
+        };
+
+        imgReset.style.cssText = `
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            pointer-events: none !important;
+        `;
+        resetBtn.appendChild(imgReset);
+    
         resetBtn.addEventListener('click', () => {
             activeFilterBunrui = null;
             const isPlana = document.documentElement.getAttribute('data-theme') === 'plana' || document.body.classList.contains('plana-theme');
@@ -2288,7 +2309,7 @@
             btn.style.cssText = `
                 width: 32px !important;
                 height: 32px !important;
-                padding: 3px !important;
+                padding: 0px !important;
                 border: 1px solid rgba(0, 178, 255, 0.3) !important;
                 background-color: rgba(0, 178, 255, 0.1) !important;
                 border-radius: 4px !important;
