@@ -271,6 +271,7 @@ const initialStudentsDataJSON = `[
 {"name":"食蜂操祈","cv":"浅倉杏美","kana":"あさくらあずみ","weapon":"HG","cover":"○","type":"STRIKER","position":"MIDDLE","role":"サポーター","school":"常盤台中学","attack":"爆発","defense":"重装甲","urban":"S(SS)","outdoor":"C","indoor":"C","range":550,"gear1":"シューズ","gear2":"ヘアピン","gear3":"ネックレス","ex_cost":5,"ex_name":"心理掌握","ex_desc":"指定した相手およびその円形範囲内の最も近い敵2人に対して、攻撃力の1468%分のダメージ混乱状態を付与(7秒間)","ex_tags":"ダメージ(範囲),混乱","ns_name":"少し手伝ってくれるかしら？","ns_desc":"30秒毎に、円形範囲内の敵に攻撃力の604%分のダメージ","ns_tags":"ダメージ(範囲)","ns_add":"","ps_name":"常盤台の女王","ps_desc":"CC強化力を26.6%増加","ps_tags":"CC強化力UP(自)","ps_unique2":"攻撃力を288増加","ss_name":"私は頭脳派だしぃ","ss_desc":"食蜂操祈のEXスキルで相手に混乱状態を適用する度に防御力と回避値を36.7%増加(20秒間)","ss_tags":"防御力UP(自),回避値UP(自)","item_name":"","gearStats":"","gift_name":"","artifacts":""}
 ]`;
 
+
 const skittagJSON = `[
 {"skil_tag":"攻撃力UP(自)","sort_no":1,"skil_tag_bunrui":"火力強化"},
 {"skil_tag":"攻撃力UP(単体)","sort_no":2,"skil_tag_bunrui":"火力強化"},

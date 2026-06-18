@@ -534,11 +534,12 @@ function buildDynamicDropdowns(students) {
         
         let list = Array.from(set);
         
-        // 戦地適性以外は自動でソートをかける（コストは数値ソート）
         if (id === 'dropExCost') {
-            list.sort((a, b) => Number(a) - Number(b));
+        
+            list.sort((a, b) => String(a).localeCompare(String(b), 'ja', { numeric: true, sensitivity: 'base' }));
         }
         
+    
         list.forEach(val => {
             const div = document.createElement('div');
             div.className = 'dropdown-option';
@@ -1943,20 +1944,10 @@ window.addEventListener('DOMContentLoaded', () => {
 // 学校、市街地、屋外、屋内、EXコストのドロップダウンをデータから自動抽出して再構築する関数
 function buildDynamicFiltersFromData(students) {
     const schoolsSet = new Set();
-    const costSet = new Set();
 
     // 全生徒データから各項目の値を重複なく抽出
     students.forEach(s => {
         if (s.school && String(s.school).trim() !== '') schoolsSet.add(String(s.school).trim());
-        
-        // 🌟EXコストの抽出：数値変換（Numberなど）は絶対にせず、100%純粋な「文字列」としてそのまま取得する
-        if (s.ex_cost !== undefined && s.ex_cost !== null) {
-            const rawCost = String(s.ex_cost).trim();
-            // 完全に中身が空のデータ（または未設定の「-」）のみを除外
-            if (rawCost !== '' && rawCost !== '-') {
-                costSet.add(rawCost);
-            }
-        }
     });
 
     // 🌟【文字列専用・自然順ソート関数】
@@ -1969,11 +1960,7 @@ function buildDynamicFiltersFromData(students) {
 
     // 各ドロップダウンIDと、抽出・ソートしたデータのマッピング
     const filterConfigs = [
-        { id: 'dropSchool', data: stringNaturalSort(Array.from(schoolsSet)) },
-        { id: 'dropUrban', data: stringNaturalSort(Array.from(urbanSet)) },
-        { id: 'dropOutdoor', data: stringNaturalSort(Array.from(outdoorSet)) },
-        { id: 'dropIndoor', data: stringNaturalSort(Array.from(indoorSet)) },
-        { id: 'dropCost', data: stringNaturalSort(Array.from(costSet)) } // EXコストも完全に文字列としてソート
+        { id: 'dropSchool', data: stringNaturalSort(Array.from(schoolsSet)) }
     ];
 
     filterConfigs.forEach(config => {
