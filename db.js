@@ -378,9 +378,6 @@ function getCheckedValues(id) {
     return Array.from(checkboxes).map(cb => cb.value);
 }
 
-// ============================================================================
-// 【修正】ドロップダウン動的構築（遮蔽のリスト表示を統一）
-// ============================================================================
 function buildDynamicDropdowns(students) {
     let mBunrui = [];
     let mTag = [];
@@ -535,11 +532,9 @@ function buildDynamicDropdowns(students) {
         let list = Array.from(set);
         
         if (id === 'dropExCost') {
-        
             list.sort((a, b) => String(a).localeCompare(String(b), 'ja', { numeric: true, sensitivity: 'base' }));
         }
         
-    
         list.forEach(val => {
             const div = document.createElement('div');
             div.className = 'dropdown-option';
@@ -710,7 +705,7 @@ function buildDynamicDropdowns(students) {
     });
 
     // ============================================================================
-    // 🌟 CVドロップダウン（dropCv）50音単位での強制改行処理
+    // 🌟 CVドロップダウン（dropCv）50音単位での強制改行処理 ＆ 読み仮名ベース絞り込み（リセット機能付き）
     // ============================================================================
     const dropCvEl = document.getElementById('dropCv');
     if (dropCvEl) {
@@ -719,6 +714,161 @@ function buildDynamicDropdowns(students) {
             content.innerHTML = ''; 
             content.classList.add('cv-grid-layout'); 
             content.style.boxSizing = 'border-box';
+
+            // 全体のリスト幅は元の状態（極端に広げない）を維持
+            content.style.setProperty('min-width', 'max-content', 'important');
+
+            // ─── 📌 11個の横並びボタンコンテナ ───
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'cv-kana-container';
+            buttonContainer.style.cssText = 'grid-column: 1 / -1 !important; display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; gap: 2px !important; width: 100% !important; padding-bottom: 8px !important; margin-bottom: 8px !important; border-bottom: 1px solid var(--border-color, #ccc) !important; box-sizing: border-box !important;';
+
+            // 声優名から「対応するかな（読みの1文字目）」を特定して「行」を判定する関数
+            function getCvRowGroupByName(cvName) {
+                if (!cvName) return 'あ';
+                const student = cachedStudents.find(s => s.cv && s.cv.trim() === cvName.trim());
+                if (!student) return 'あ';
+
+                const rawName = student.kana || student.cv_kana || student.cv_yomi || student.cv;
+                const str = String(rawName).trim();
+                let firstChar = str.charAt(0);
+
+                const code = firstChar.charCodeAt(0);
+                if (code >= 0x30A1 && code <= 0x30F6) {
+                    firstChar = String.fromCharCode(code - 0x0060);
+                }
+
+                if (/^[あ-お]/.test(firstChar)) return 'あ';
+                if (/^[か-ご]/.test(firstChar)) return 'か';
+                if (/^[さ-ぞ]/.test(firstChar)) return 'さ';
+                if (/^[た-ど]/.test(firstChar)) return 'た';
+                if (/^[な-の]/.test(firstChar)) return 'な';
+                if (/^[は-ぼぱ-ぽ]/.test(firstChar)) return 'は';
+                if (/^[ま-も]/.test(firstChar)) return 'ま';
+                if (/^[や-よ]/.test(firstChar)) return 'や';
+                if (/^[ら-ろ]/.test(firstChar)) return 'ら';
+                if (/^[わ-ん]/.test(firstChar)) return 'わ';
+                return 'あ';
+            }
+
+            // ─── 📌 【新設】「すべて」状態に強制リセットする共通関数 ───
+            function resetCvTabToAll() {
+                const allBtn = buttonContainer.querySelector('.cv-kana-btn-all');
+                if (!allBtn) return;
+                
+                // 全ボタンの色を通常に戻し、「すべて」だけアクティブ色にする
+                buttonContainer.querySelectorAll('.cv-kana-btn').forEach(b => {
+                    b.style.setProperty('background', 'var(--bg-input, #f0f0f0)', 'important');
+                    b.style.setProperty('color', 'var(--text-main, #333)', 'important');
+                    b.style.setProperty('border-color', 'var(--border-color, #ddd)', 'important');
+                });
+                allBtn.style.setProperty('background', 'var(--ba-blue, #00B2FF)', 'important');
+                allBtn.style.setProperty('color', '#ffffff', 'important');
+                allBtn.style.setProperty('border-color', 'var(--ba-blue, #00B2FF)', 'important');
+
+                // すべての選択肢・タイトル・区切り線を表示状態に戻す
+                const children = content.children;
+                for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    if (child !== buttonContainer) {
+                        child.style.setProperty('display', 'block', 'important');
+                    }
+                }
+            }
+
+            // 🌟 ドロップダウンが閉じられたイベントを検知してリセットをかける仕組み
+            // MutationObserverを使い、親要素のクラスから 'open' や 'active' が外れた瞬間、または display:none になった瞬間を監視します
+            if (!dropCvEl.dataset.observed) {
+                dropCvEl.dataset.observed = "true";
+                const observer = new MutationObserver(() => {
+                    const isClosed = !dropCvEl.classList.contains('open') && 
+                                     !dropCvEl.classList.contains('active') && 
+                                     content.style.display === 'none';
+                    if (isClosed) {
+                        resetCvTabToAll();
+                    }
+                });
+                observer.observe(dropCvEl, { attributes: true, attributeFilter: ['class'] });
+                observer.observe(content, { attributes: true, attributeFilter: ['style'] });
+            }
+
+            const tabs = ['すべて', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'];
+            tabs.forEach(tabName => {
+                const btn = document.createElement('div');
+                btn.className = 'cv-kana-btn';
+                if (tabName === 'すべて') btn.classList.add('cv-kana-btn-all');
+                btn.innerText = tabName;
+                
+                // 基本スタイル
+                btn.style.cssText = 'flex: 1 1 0% !important; min-width: 0 !important; padding: 5px 0 !important; font-size: 11px !important; font-weight: bold !important; text-align: center !important; border-radius: 4px !important; cursor: pointer !important; user-select: none !important; box-sizing: border-box !important; border: 1px solid var(--border-color, #ddd) !important; background: var(--bg-input, #f0f0f0); color: var(--text-main, #333); writing-mode: horizontal-tb !important;';
+
+                // 「すべて」ボタン個別の横幅確保
+                if (tabName === 'すべて') {
+                    btn.style.setProperty('flex', '2 1 0%', 'important');
+                    btn.style.setProperty('background', 'var(--ba-blue, #00B2FF)', 'important');
+                    btn.style.setProperty('color', '#ffffff', 'important');
+                    btn.style.setProperty('border-color', 'var(--ba-blue, #00B2FF)', 'important');
+                }
+
+                // ─── 📌 ボタンクリック時の絞り込み処理 ───
+                btn.onclick = function(e) {
+                    e.stopPropagation(); 
+                    
+                    buttonContainer.querySelectorAll('.cv-kana-btn').forEach(b => {
+                        b.style.setProperty('background', 'var(--bg-input, #f0f0f0)', 'important');
+                        b.style.setProperty('color', 'var(--text-main, #333)', 'important');
+                        b.style.setProperty('border-color', 'var(--border-color, #ddd)', 'important');
+                    });
+                    btn.style.setProperty('background', 'var(--ba-blue, #00B2FF)', 'important');
+                    btn.style.setProperty('color', '#ffffff', 'important');
+                    btn.style.setProperty('border-color', 'var(--ba-blue, #00B2FF)', 'important');
+
+                    const children = content.children;
+                    for (let i = 0; i < children.length; i++) {
+                        const child = children[i];
+                        if (child === buttonContainer) continue;
+
+                        if (child.classList.contains('dropdown-option')) {
+                            const cvName = child.innerText;
+                            const belongsTo = getCvRowGroupByName(cvName);
+
+                            if (tabName === 'すべて' || belongsTo === tabName) {
+                                child.style.setProperty('display', 'block', 'important');
+                            } else {
+                                child.style.setProperty('display', 'none', 'important');
+                            }
+                        }
+                    }
+
+                    // グループヘッダーと区切り線の連動制御
+                    let lastTitleEl = null;
+                    let hasVisibleOptionInGroup = false;
+
+                    for (let i = 0; i < children.length; i++) {
+                        const child = children[i];
+                        if (child === buttonContainer) continue;
+
+                        if (child.classList.contains('cv-row-wide-title')) {
+                            if (lastTitleEl) {
+                                lastTitleEl.style.setProperty('display', (tabName === 'すべて' || hasVisibleOptionInGroup) ? 'block' : 'none', 'important');
+                            }
+                            lastTitleEl = child;
+                            hasVisibleOptionInGroup = false;
+                        } else if (child.classList.contains('dropdown-option')) {
+                            if (child.style.display === 'block') {
+                                hasVisibleOptionInGroup = true;
+                            }
+                        } else {
+                            child.style.setProperty('display', tabName === 'すべて' ? 'block' : 'none', 'important');
+                        }
+                    }
+                    if (lastTitleEl) {
+                        lastTitleEl.style.setProperty('display', (tabName === 'すべて' || hasVisibleOptionInGroup) ? 'block' : 'none', 'important');
+                    }
+                };
+                buttonContainer.appendChild(btn);
+            });
+            content.appendChild(buttonContainer);
 
             function getInitialChar(studentObj) {
                 if (!studentObj || !studentObj.cv) return 'その他';
